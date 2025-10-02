@@ -1,8 +1,8 @@
-# Hedera AIO Discord Bot 🚀
+# Hedera AIO Discord Bot 
 
 An all-in-one Discord bot for Hedera NFT communities. Verify NFT ownership, assign roles, track sales, and more - all using **Hedera Mirror Node only** (no wallet connections required)!
 
-## ✨ Features
+## Features
 
 - **NFT Verification**: Verify wallet ownership and auto-assign roles based on NFT holdings
 - **Reaction Roles**: Auto-verify new members with emoji reactions
@@ -12,7 +12,7 @@ An all-in-one Discord bot for Hedera NFT communities. Verify NFT ownership, assi
 - **Auto Scanner**: Automatically updates roles when NFT holdings change
 - **Safe & Secure**: Uses Mirror Node only - no private keys or wallet connections needed!
 
-## 🚂 Quick Deploy to Railway
+## Quick Deploy to Railway
 
 Railway is the recommended hosting platform ($5/month). Follow these steps:
 
@@ -230,7 +230,7 @@ This project is open source and available under the MIT License.
 
 ## 🙏 Credits
 
- Built with 💚by SLIME for the Hedera community.
+ Built by SLIME with 💚 for the Hedera community.
 
 ---
 
