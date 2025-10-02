@@ -139,7 +139,7 @@ Railway will automatically deploy your bot. Check the logs to confirm it's runni
    npm start
    ```
 
-## Configuration Guide
+## Discord Configuration Guide
 
 ### Setting Up Reaction Roles
 
