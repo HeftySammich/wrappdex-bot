@@ -1,15 +1,15 @@
 # Hedera AIO Discord Bot 
 
-An all-in-one Discord bot for Hedera NFT communities. Verify NFT ownership, assign roles, track sales, and more - all using **Hedera Mirror Node only** (no wallet connections required)!
+An all-in-one Discord bot for Hedera NFT communities. Verify, assign roles, track sales, run giveaways, and more - all using **Hedera Mirror Node only** (no wallet connections required)!
 
 ## Features
 
 - **NFT Verification**: Verify wallet ownership and auto-assign roles based on NFT holdings
-- **Reaction Roles**: Auto-verify new members with emoji reactions
+- **Reaction Roles**: Verify new members with emoji reactions
 - **Sales Monitoring**: Real-time NFT sales notifications from Hedera Mirror Node
 - **Daily Reports**: Automated daily collection stats (holders, floor price, volume)
 - **NFT Giveaways**: Weighted raffle system based on NFT holdings
-- **Auto Scanner**: Automatically updates roles when NFT holdings change
+- **Auto Scanner**: Scans every 30 mins and automatically updates roles when NFT holdings change
 - **Safe & Secure**: Uses Mirror Node only - no private keys or wallet connections needed!
 
 ## Quick Deploy to Railway
