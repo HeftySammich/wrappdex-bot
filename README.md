@@ -1,4 +1,4 @@
-# Hedera AIO Discord Bot 
+# Hedera AIO Community Bot 
 
 An all-in-one Discord bot for Hedera NFT communities. Verify, assign roles, track sales, run giveaways, and more - all using **Hedera Mirror Node only** (no wallet connections required)!
 
