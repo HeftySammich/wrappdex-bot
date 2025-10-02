@@ -97,7 +97,7 @@ Railway will automatically deploy your bot. Check the logs to confirm it's runni
 🚀 Bot is ready and running!
 ```
 
-## 🎮 Bot Commands
+## Bot Commands
 
 ### Public Commands
 - `/verify-wallet <accountId>` - Verify your Hedera wallet and get roles
@@ -115,7 +115,7 @@ Railway will automatically deploy your bot. Check the logs to confirm it's runni
 - `/test-daily` - Test daily message (admin only)
 - `/bot-status` - Check bot service status
 
-## 🛠️ Local Development
+## Local Development
 
 1. **Clone the repository**
    ```bash
@@ -139,7 +139,7 @@ Railway will automatically deploy your bot. Check the logs to confirm it's runni
    npm start
    ```
 
-## 📝 Configuration Guide
+## Configuration Guide
 
 ### Setting Up Reaction Roles
 
@@ -167,7 +167,7 @@ To enable giveaway features:
 2. Set `FAUCET_PRIVATE_KEY` to your account's private key
 3. Use `/start-giveaway` to launch giveaways!
 
-## 🎨 Customizing Messages for Your Community
+## Customizing Messages for Your Community
 
 All user-facing messages include `TODO` comments in the code for easy customization. Search for `TODO:` in these files:
 
@@ -210,25 +210,25 @@ All user-facing messages include `TODO` comments in the code for easy customizat
 .setTitle('🎁 CoolNFT Giveaway - How to Win!')
 ```
 
-## 🔒 Security Notes
+## Security Notes
 
 - **Never commit `.env` files** to version control
 - **Keep your bot token secret** - regenerate if exposed
 - **Faucet private key**: Only needed for giveaways - keep it secure!
 - **Mirror Node only**: Bot uses public Hedera Mirror Node API (no wallet connections)
 
-## 🤝 Support
+## Support
 
 Need help setting up the bot?
 
 - **DIY**: Follow this README and the `.env.example` file
 - **Paid Setup**: Contact us for professional configuration assistance
 
-## 📄 License
+## License
 
 This project is open source and available under the MIT License.
 
-## 🙏 Credits
+## Credits
 
  Built by SLIME with 💚 for the Hedera community.
 
