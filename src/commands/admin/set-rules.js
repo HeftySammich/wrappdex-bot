@@ -33,7 +33,7 @@ module.exports = {
 
       await addRule(type, value, role.id, interaction.guildId);
 
-      const typeDescription = type === 'quantity' ? 'NFTs owned' : 'Serial numbers';
+      const typeDescription = type === 'quantity' ? 'Token(s) owned' : 'Serial numbers';
       await interaction.reply({
         content: `✅ **Rule Added Successfully!**\n\n` +
                  `📋 **Rule Details:**\n` +

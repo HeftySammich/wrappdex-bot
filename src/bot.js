@@ -88,7 +88,7 @@ client.on('guildMemberAdd', async (member) => {
     if (welcomeChannel) {
       // TODO: Customize this welcome message for your community
       const welcomeMessage = `Welcome ${member} to **${member.guild.name}**!\n\n` +
-                             `React in the verification channel to get started, then use \`/verify-wallet\` to verify your NFT holdings and receive roles!`;
+                             `React in the verification channel to get started, then use \`/verify-wallet\` to verify your token holdings and receive roles!`;
 
       await welcomeChannel.send(welcomeMessage);
       console.log(`✅ Welcome message sent for ${member.user.tag}`);
@@ -307,7 +307,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
         `You've been verified and can now access all channels.\n\n` +
         `**Next Steps:**\n` +
         `• Use \`/verify-wallet <your-hedera-account-id>\` to link your wallet\n` +
-        `• Get roles based on your NFT holdings\n` +
+        `• Get roles based on your token holdings\n` +
         `• Explore the server and have fun!`
       );
     } catch (error) {

@@ -25,10 +25,10 @@ module.exports = {
       if (!nftData.ownsToken) {
         const { TOKEN_IDS } = require('../../utils/constants');
         await interaction.editReply({
-          content: `❌ **No NFTs Found**\n\n` +
+          content: `❌ **No Tokens Found**\n\n` +
                    `🔍 **Wallet:** \`${accountId}\`\n` +
                    `📋 **Tokens:** \`${TOKEN_IDS.join(', ')}\`\n\n` +
-                   `This wallet doesn't own any NFTs from these collections.`
+                   `This wallet doesn't own any tokens from these collections.`
         });
         return;
       }
@@ -58,7 +58,7 @@ module.exports = {
       await interaction.editReply({
         content: `✅ **Verification Complete!**\n\n` +
                  `🔍 **Wallet:** \`${accountId}\`\n` +
-                 `🎯 **NFTs Found:** ${nftData.quantity}\n` +
+                 `🎯 **Tokens Found:** ${nftData.quantity}\n` +
                  `📋 **Serial Numbers:** ${nftData.serials.join(', ')}\n\n` +
                  `🎭 **Roles Assigned:** ${assignedRoles.length > 0 ? assignedRoles.join(', ') : 'None (no matching rules)'}\n\n` +
                  `🔄 **Auto-Scan Enabled:** Your roles will be automatically updated every 30 minutes!`

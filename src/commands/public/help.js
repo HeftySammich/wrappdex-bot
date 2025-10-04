@@ -18,15 +18,15 @@ module.exports = {
       const helpEmbed = new EmbedBuilder()
         .setColor('#00ff00') // Customize this color for your brand
         .setTitle('🆘 Help & Information')
-        .setDescription('Learn how to verify your wallet and unlock roles based on your NFT holdings!')
+        .setDescription('Learn how to verify your wallet and unlock roles based on your token holdings!')
         .addFields(
           {
             name: '🔐 How to Verify Your Wallet',
-            value: 'Use the `/verify-wallet` command with your Hedera account ID to link your wallet and automatically receive roles based on your NFT holdings.\n\n' +
+            value: 'Use the `/verify-wallet` command with your Hedera account ID to link your wallet and automatically receive roles based on your token holdings.\n\n' +
                    '**Example:**\n' +
                    '`/verify-wallet accountid:0.0.1231234`\n\n' +
                    '**What happens next?**\n' +
-                   '• Bot checks your NFT holdings on Hedera\n' +
+                   '• Bot checks your token holdings on Hedera\n' +
                    '• Roles are assigned based on server rules\n' +
                    '• Your roles update automatically every 30 minutes',
             inline: false
@@ -42,9 +42,9 @@ module.exports = {
           const roleName = role ? role.name : 'Unknown Role';
 
           if (rule.type === 'quantity') {
-            rulesText += `**${ruleNumber}.** Own **${rule.value}+ NFTs** → Get **${roleName}** role\n`;
+            rulesText += `**${ruleNumber}.** Own **${rule.value}+ Token(s)** → Get **${roleName}** role\n`;
           } else if (rule.type === 'serial') {
-            rulesText += `**${ruleNumber}.** Own **NFT #${rule.value}** → Get **${roleName}** role\n`;
+            rulesText += `**${ruleNumber}.** Own **Token #${rule.value}** → Get **${roleName}** role\n`;
           }
         });
 
@@ -56,7 +56,7 @@ module.exports = {
       } else {
         helpEmbed.addFields({
           name: '📋 Server Role Rules',
-          value: 'No role rules have been set up yet.\n\nAdmins can use `/set-rules` to create automatic role assignment rules based on NFT holdings.',
+          value: 'No role rules have been set up yet.\n\nAdmins can use `/set-rules` to create automatic role assignment rules based on token holdings.',
           inline: false
         });
       }
@@ -65,13 +65,13 @@ module.exports = {
       const { TOKEN_IDS } = require('../../utils/constants');
       helpEmbed.addFields(
         {
-          name: '🎯 NFT Collection Info',
+          name: '🎯 Token Collection Info',
           value: `**Token IDs:** \`${TOKEN_IDS.join('`, `')}\`\n**Network:** Hedera Mainnet`,
           inline: true
         },
         {
           name: '🔄 Automatic Role Updates',
-          value: 'Your roles sync automatically every 30 minutes based on your current NFT holdings!',
+          value: 'Your roles sync automatically every 30 minutes based on your current token holdings!',
           inline: true
         },
         {
