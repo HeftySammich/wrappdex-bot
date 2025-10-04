@@ -51,7 +51,7 @@ module.exports = {
           `**What's Next?**\n` +
           `• Get the verified role instantly\n` +
           `• Access all channels\n` +
-          `• Use \`/verify-wallet\` to link your NFT wallet and get additional roles\n\n` +
+          `• Use \`/verify-wallet\` to link your Hedera wallet and get additional roles\n\n` +
           `We're glad you're here! 🚀`
         )
         .setColor(0x00FF00) // Green color - customize this hex code for your brand

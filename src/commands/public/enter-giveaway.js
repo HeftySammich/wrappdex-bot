@@ -5,7 +5,7 @@ const { getNFTData } = require('../../services/hederaService');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('enter-giveaway')
-    .setDescription('Enter the active NFT giveaway'),
+    .setDescription('Enter the active token giveaway'),
 
   async execute(interaction) {
     try {
@@ -52,14 +52,14 @@ module.exports = {
         activeGiveaway.id
       );
 
-      // Get current NFT data for ticket count
+      // Get current token data for ticket count
       const nftData = await getNFTData(userVerification.wallet_address);
-      
+
       if (!nftData.ownsToken || nftData.quantity === 0) {
         await interaction.editReply({
-          content: '❌ **No NFTs Found**\n\n' +
-                   `Your verified wallet (\`${userVerification.wallet_address}\`) doesn't currently own any NFTs from this collection.\n` +
-                   'You need at least 1 NFT to enter the giveaway!'
+          content: '❌ **No Tokens Found**\n\n' +
+                   `Your verified wallet (\`${userVerification.wallet_address}\`) doesn't currently own any tokens from this collection.\n` +
+                   'You need at least 1 token to enter the giveaway!'
         });
         return;
       }
@@ -81,10 +81,10 @@ module.exports = {
         // Updated existing entry
         await interaction.editReply({
           content: '✅ **Giveaway Entry Updated!**\n\n' +
-                   `🎫 **Your Tickets:** ${nftData.quantity} (based on current NFT count)\n` +
+                   `🎫 **Your Tickets:** ${nftData.quantity} (based on current token count)\n` +
                    `💼 **Wallet:** \`${userVerification.wallet_address}\`\n` +
                    `⏰ **Time Remaining:** ${timeRemainingText}\n\n` +
-                   '🔄 Your ticket count was updated based on your current NFT holdings!'
+                   '🔄 Your ticket count was updated based on your current token holdings!'
         });
       } else {
         // New entry
@@ -93,7 +93,7 @@ module.exports = {
                    `🎫 **Your Tickets:** ${nftData.quantity}\n` +
                    `💼 **Wallet:** \`${userVerification.wallet_address}\`\n` +
                    `⏰ **Time Remaining:** ${timeRemainingText}\n\n` +
-                   '🍀 Good luck! Each NFT you own gives you one raffle ticket.'
+                   '🍀 Good luck! Each token you own gives you one raffle ticket.'
         });
       }
 

@@ -3,7 +3,7 @@ const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('start-giveaway')
-    .setDescription('Start an NFT giveaway (admin only)')
+    .setDescription('Start a token giveaway (admin only)')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addStringOption(option =>
       option.setName('duration')
@@ -51,7 +51,7 @@ module.exports = {
 
       // Send the giveaway announcement
       await interaction.editReply({
-        content: '✅ **Giveaway Started Successfully!**\n\n@everyone A new NFT giveaway has begun!',
+        content: '✅ **Giveaway Started Successfully!**\n\n@everyone A new token giveaway has begun!',
         embeds: [result.embed],
         allowedMentions: { parse: ['everyone'] }
       });

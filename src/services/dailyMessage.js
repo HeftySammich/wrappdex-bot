@@ -301,7 +301,7 @@ class DailyMessage {
     const embed = new EmbedBuilder()
       .setTitle('🌟 Daily Collection Report')
       .setColor('#00ff40') // Customize this color for your brand
-      .setDescription('Your daily snapshot of HBAR price and NFT collection statistics')
+      .setDescription('Your daily snapshot of HBAR price and token collection statistics')
       .setTimestamp();
 
     // HBAR Price Section
@@ -321,7 +321,7 @@ class DailyMessage {
       });
     }
 
-    // NFT Collection Section
+    // Token Collection Section
     const floorPriceDisplay = slimeData.floorPrice > 0 ?
       `${slimeData.floorPrice} HBAR` :
       'No active listings';
@@ -331,12 +331,12 @@ class DailyMessage {
       '0%';
 
     embed.addFields({
-      name: '🎯 NFT Collection Stats',
+      name: '🎯 Token Collection Stats',
       value:
-        `**Total Supply:** ${slimeData.supply.toLocaleString()} NFTs\n` +
+        `**Total Supply:** ${slimeData.supply.toLocaleString()} tokens\n` +
         `**Unique Holders:** ${slimeData.holders.toLocaleString()}\n` +
         `**Floor Price:** ${floorPriceDisplay}\n` +
-        `**Listed for Sale:** ${slimeData.listedCount} NFTs (${listedPercentage} of supply)`,
+        `**Listed for Sale:** ${slimeData.listedCount} tokens (${listedPercentage} of supply)`,
       inline: false
     });
 

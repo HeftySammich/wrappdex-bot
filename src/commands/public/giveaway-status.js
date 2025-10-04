@@ -52,7 +52,7 @@ module.exports = {
               name: '📋 What to do',
               value: '• Wait for an admin to start a giveaway\n' +
                      '• Use `/giveaway-help` for more information\n' +
-                     '• Make sure you own NFTs from this collection to participate!',
+                     '• Make sure you own tokens from this collection to participate!',
               inline: false
             }
           )
@@ -151,7 +151,7 @@ module.exports = {
           },
           {
             name: '🎯 How to Enter',
-            value: 'Use `/enter-giveaway` to participate!\nYour ticket count will be based on your current NFT holdings.',
+            value: 'Use `/enter-giveaway` to participate!\nYour ticket count will be based on your current token holdings.',
             inline: false
           }
         );

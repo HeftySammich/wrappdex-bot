@@ -42,7 +42,7 @@ class HederaMirrorMonitor {
 
   async checkForNewSales() {
     try {
-      console.log('🔍 Checking for new NFT sales...');
+      console.log('🔍 Checking for new token sales...');
 
       // Get recent CRYPTOTRANSFER transactions and filter for our token
       const endpoint = `/api/v1/transactions?transactiontype=CRYPTOTRANSFER&order=desc&limit=100`;
@@ -114,7 +114,7 @@ class HederaMirrorMonitor {
 
       // If we found sales, send a batch notification
       if (salesInTransaction.length > 0) {
-        console.log(`🎉 BATCH SALE DETECTED! ${salesInTransaction.length} NFTs`);
+        console.log(`🎉 BATCH SALE DETECTED! ${salesInTransaction.length} tokens`);
 
         await this.sendSaleNotification({
           sales: salesInTransaction,
@@ -197,12 +197,12 @@ class HederaMirrorMonitor {
       // Create embedded message
       // TODO: Customize this sales notification for your community
       const embed = new EmbedBuilder()
-        .setTitle('🎉 NFT SALE DETECTED! 🎉')
+        .setTitle('🎉 TOKEN SALE DETECTED! 🎉')
         .setColor('#00ff40') // Customize this color for your brand
-        .setDescription(`${quantity} NFT${quantity > 1 ? 's have' : ' has'} been sold from the collection!`)
+        .setDescription(`${quantity} token${quantity > 1 ? 's have' : ' has'} been sold from the collection!`)
         .addFields(
           {
-            name: '🎯 NFT Serial Number(s)',
+            name: '🎯 Token Serial Number(s)',
             value: `**${serialsDisplay}**`,
             inline: false
           },
@@ -228,7 +228,7 @@ class HederaMirrorMonitor {
         .setTimestamp(timestamp);
 
       await channel.send({ embeds: [embed] });
-      console.log(`✅ Sale notification sent for ${quantity} NFT(s): ${serialsDisplay}`);
+      console.log(`✅ Sale notification sent for ${quantity} token(s): ${serialsDisplay}`);
 
     } catch (error) {
       console.error('❌ Error sending sale notification:', error);

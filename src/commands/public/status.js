@@ -59,7 +59,7 @@ module.exports = {
             {
               name: `💼 Wallet${walletNumber}`,
               value: `**Address:** \`${verification.wallet_address}\`\n` +
-                     `**NFTs:** ${verification.last_nft_count}\n` +
+                     `**Tokens:** ${verification.last_nft_count}\n` +
                      `**Serials:** ${verification.last_serials || 'None'}\n` +
                      `**Last Checked:** <t:${Math.floor(new Date(verification.last_checked).getTime() / 1000)}:R>`,
               inline: userVerifications.length === 1 ? false : true
@@ -81,7 +81,7 @@ module.exports = {
           },
           {
             name: '🔄 Auto-Updates',
-            value: 'Your roles are automatically updated every 30 minutes based on your current NFT holdings.',
+            value: 'Your roles are automatically updated every 30 minutes based on your current token holdings.',
             inline: false
           }
         );

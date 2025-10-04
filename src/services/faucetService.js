@@ -19,12 +19,12 @@ class FaucetService {
         };
       }
 
-      // Check available NFTs
+      // Check available tokens
       const nftStatus = await getAvailableNFTs();
       if (!nftStatus.hasNFTs) {
         return {
           success: false,
-          message: '❌ No NFTs available in faucet wallet for giveaway!'
+          message: '❌ No tokens available in faucet wallet for giveaway!'
         };
       }
 
@@ -57,9 +57,9 @@ class FaucetService {
       // Create announcement embed
       // TODO: Customize this giveaway announcement for your community
       const embed = new EmbedBuilder()
-        .setTitle('🎁 NFT GIVEAWAY STARTED! 🎁')
+        .setTitle('🎁 TOKEN GIVEAWAY STARTED! 🎁')
         .setColor('#00ff40') // Customize this color for your brand
-        .setDescription('A new NFT giveaway has begun! Enter now for your chance to win!')
+        .setDescription('A new token giveaway has begun! Enter now for your chance to win!')
         .addFields(
           {
             name: '⏰ Duration',
@@ -68,12 +68,12 @@ class FaucetService {
           },
           {
             name: '🎯 Prize',
-            value: '**1 Random NFT from Collection**',
+            value: '**1 Random Token from Collection**',
             inline: true
           },
           {
             name: '🎫 How to Enter',
-            value: 'Use `/enter-giveaway` to participate!\n\n**Raffle System:** Each NFT you own = 1 ticket',
+            value: 'Use `/enter-giveaway` to participate!\n\n**Raffle System:** Each token you own = 1 ticket',
             inline: false
           },
           {
@@ -129,7 +129,7 @@ class FaucetService {
         const embed = new EmbedBuilder()
           .setTitle('😔 Giveaway Ended - No Participants')
           .setColor('#ff0000')
-          .setDescription('The NFT giveaway has ended with no entries. Better luck next time!')
+          .setDescription('The token giveaway has ended with no entries. Better luck next time!')
           .setTimestamp();
 
         await channel.send({ embeds: [embed] });
@@ -140,8 +140,8 @@ class FaucetService {
       // Pick weighted random winner
       const winner = this.pickWeightedWinner(entries);
       
-      // Transfer NFT to winner
-      const transferResult = await transferNFT(winner.wallet_address, null); // null = random available NFT
+      // Transfer token to winner
+      const transferResult = await transferNFT(winner.wallet_address, null); // null = random available token
 
       let embed;
       if (transferResult.success) {
@@ -150,7 +150,7 @@ class FaucetService {
         embed = new EmbedBuilder()
           .setTitle('🎉 GIVEAWAY WINNER ANNOUNCED! 🎉')
           .setColor('#00ff40') // Customize this color for your brand
-          .setDescription(`Congratulations to our winner! The NFT has been automatically sent to your verified wallet!`)
+          .setDescription(`Congratulations to our winner! The token has been automatically sent to your verified wallet!`)
           .addFields(
             {
               name: '🏆 Winner',
@@ -169,7 +169,7 @@ class FaucetService {
             },
             {
               name: '🎯 Prize Won',
-              value: transferResult.serialNumber ? `**NFT #${transferResult.serialNumber}**` : '**1 NFT from Collection**',
+              value: transferResult.serialNumber ? `**Token #${transferResult.serialNumber}**` : '**1 Token from Collection**',
               inline: false
             },
             {
@@ -189,7 +189,7 @@ class FaucetService {
         embed = new EmbedBuilder()
           .setTitle('⚠️ Giveaway Winner Selected')
           .setColor('#ffaa00')
-          .setDescription('Winner selected but NFT transfer failed. Manual intervention required.')
+          .setDescription('Winner selected but token transfer failed. Manual intervention required.')
           .addFields(
             {
               name: '🏆 Winner',

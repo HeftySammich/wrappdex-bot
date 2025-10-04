@@ -3,7 +3,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('giveaway-help')
-    .setDescription('Get help and instructions for NFT giveaways'),
+    .setDescription('Get help and instructions for token giveaways'),
 
   async execute(interaction) {
     try {
@@ -12,23 +12,23 @@ module.exports = {
       // TODO: Customize this giveaway help message for your community
       const helpEmbed = new EmbedBuilder()
         .setColor('#00ff40') // Customize this color for your brand
-        .setTitle('🎁 NFT Giveaway - How It Works')
-        .setDescription('Everything you need to know about participating in community NFT giveaways!')
+        .setTitle('🎁 Token Giveaway - How It Works')
+        .setDescription('Everything you need to know about participating in community token giveaways!')
         .addFields(
           {
             name: '📋 Entry Requirements',
             value: '✅ Must have a verified Hedera wallet (use `/verify-wallet`)\n' +
-                   '✅ Must own at least 1 NFT from the collection\n' +
+                   '✅ Must own at least 1 token from the collection\n' +
                    '✅ Giveaway must be active (check with `/giveaway-status`)',
             inline: false
           },
           {
             name: '🎫 Raffle Ticket System',
             value: '**How it works:**\n' +
-                   '• Each NFT you own = 1 raffle ticket\n' +
-                   '• More NFTs = higher chance to win\n' +
+                   '• Each token you own = 1 raffle ticket\n' +
+                   '• More tokens = higher chance to win\n' +
                    '• Ticket count automatically updates when you enter\n\n' +
-                   '**Example:** Own 5 NFTs = 5 tickets = 5x the chance!',
+                   '**Example:** Own 5 tokens = 5 tickets = 5x the chance!',
             inline: false
           },
           {
@@ -54,15 +54,15 @@ module.exports = {
                    '• Random selection weighted by ticket count\n' +
                    '• More tickets = better odds\n\n' +
                    '**Prize delivery:**\n' +
-                   '• NFT sent automatically to your verified wallet\n' +
+                   '• Token sent automatically to your verified wallet\n' +
                    '• No manual claiming needed!',
             inline: false
           },
           {
             name: '❓ Frequently Asked Questions',
             value: '**Q: Can I enter multiple times?**\n' +
-                   'A: No, but you can re-enter to update your ticket count if you acquire more NFTs.\n\n' +
-                   '**Q: What if I buy more NFTs after entering?**\n' +
+                   'A: No, but you can re-enter to update your ticket count if you acquire more tokens.\n\n' +
+                   '**Q: What if I buy more tokens after entering?**\n' +
                    'A: Simply use `/enter-giveaway` again to update your ticket count!\n\n' +
                    '**Q: When do I receive my prize if I win?**\n' +
                    'A: Immediately and automatically when the giveaway ends.',
