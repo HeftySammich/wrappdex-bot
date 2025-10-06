@@ -257,15 +257,24 @@ async function handleEmbedModal(interaction) {
 // Handle reaction role modal submissions
 async function handleReactionRoleModal(interaction) {
   try {
+    // Defer reply immediately to prevent timeout
+    await interaction.deferReply({ ephemeral: true });
+
     const { addReactionRole, getReactionRolesByMessage } = require('./database/models/rules');
     const { EmbedBuilder } = require('discord.js');
 
+    console.log('📝 Processing reaction role modal submission...');
+    console.log('Custom ID:', interaction.customId);
+
     // Extract channel ID from custom ID
     const channelId = interaction.customId.split('_')[3];
+    console.log('Channel ID:', channelId);
+
     const channel = interaction.guild.channels.cache.get(channelId);
 
     if (!channel) {
-      await interaction.reply({ content: '❌ Channel not found!', ephemeral: true });
+      console.error('❌ Channel not found:', channelId);
+      await interaction.editReply({ content: '❌ Channel not found!' });
       return;
     }
 
@@ -275,6 +284,8 @@ async function handleReactionRoleModal(interaction) {
     const pair2 = interaction.fields.getTextInputValue('pair2') || '';
     const pair3 = interaction.fields.getTextInputValue('pair3') || '';
     const pair4 = interaction.fields.getTextInputValue('pair4') || '';
+
+    console.log('Form values:', { titleDesc, pair1, pair2, pair3, pair4 });
 
     // Parse title and description
     let title = 'Reaction Roles';
@@ -299,9 +310,9 @@ async function handleReactionRoleModal(interaction) {
       // Split by space - first part is emoji, rest is role
       const parts = trimmed.split(' ');
       if (parts.length < 2) {
-        await interaction.reply({
-          content: `❌ Invalid format for pair: "${trimmed}"\n\nUse format: \`emoji @role\` or \`emoji role_id\``,
-          ephemeral: true
+        console.error('❌ Invalid format:', trimmed);
+        await interaction.editReply({
+          content: `❌ Invalid format for pair: "${trimmed}"\n\nUse format: \`emoji @role\` or \`emoji role_id\``
         });
         return;
       }
@@ -318,9 +329,9 @@ async function handleReactionRoleModal(interaction) {
         // Role ID format
         roleId = roleInput;
       } else {
-        await interaction.reply({
-          content: `❌ Invalid role format: "${roleInput}"\n\nUse \`@role\` or role ID`,
-          ephemeral: true
+        console.error('❌ Invalid role format:', roleInput);
+        await interaction.editReply({
+          content: `❌ Invalid role format: "${roleInput}"\n\nUse \`@role\` or role ID`
         });
         return;
       }
@@ -328,9 +339,9 @@ async function handleReactionRoleModal(interaction) {
       // Verify role exists
       const role = interaction.guild.roles.cache.get(roleId);
       if (!role) {
-        await interaction.reply({
-          content: `❌ Role not found: ${roleInput}`,
-          ephemeral: true
+        console.error('❌ Role not found:', roleInput);
+        await interaction.editReply({
+          content: `❌ Role not found: ${roleInput}`
         });
         return;
       }
@@ -339,12 +350,14 @@ async function handleReactionRoleModal(interaction) {
     }
 
     if (parsedPairs.length === 0) {
-      await interaction.reply({
-        content: '❌ You must provide at least one emoji-role pair!',
-        ephemeral: true
+      console.error('❌ No emoji-role pairs provided');
+      await interaction.editReply({
+        content: '❌ You must provide at least one emoji-role pair!'
       });
       return;
     }
+
+    console.log(`✅ Parsed ${parsedPairs.length} emoji-role pairs`);
 
     // Create the embed
     let rolesList = '';
@@ -366,40 +379,50 @@ async function handleReactionRoleModal(interaction) {
     const message = await channel.send({ embeds: [embed] });
 
     // Add reactions and save to database
+    console.log('Adding reactions and saving to database...');
     for (const pair of parsedPairs) {
       try {
+        console.log(`Adding reaction: ${pair.emoji}`);
         await message.react(pair.emoji);
         await addReactionRole(interaction.guildId, channelId, message.id, pair.emoji, pair.roleId);
+        console.log(`✅ Saved: ${pair.emoji} → ${pair.roleName}`);
       } catch (error) {
         console.error(`❌ Error adding reaction ${pair.emoji}:`, error.message);
-        await interaction.reply({
-          content: `❌ Invalid emoji: ${pair.emoji}\n\nMake sure it's a valid emoji or custom emoji from this server.`,
-          ephemeral: true
+        await interaction.editReply({
+          content: `❌ Invalid emoji: ${pair.emoji}\n\nMake sure it's a valid emoji or custom emoji from this server.`
         });
         // Delete the message if we can't add reactions
-        await message.delete();
+        try {
+          await message.delete();
+        } catch (deleteError) {
+          console.error('Could not delete message:', deleteError.message);
+        }
         return;
       }
     }
 
-    await interaction.reply({
+    await interaction.editReply({
       content: `✅ **Reaction Role Message Created!**\n\n` +
                `📍 **Channel:** ${channel}\n` +
                `📝 **Message ID:** \`${message.id}\`\n` +
                `🎭 **Roles:** ${parsedPairs.length}\n\n` +
                `Users can now react to get roles!\n\n` +
-               `**Add more roles:** Use \`/reaction-role-add message_id:${message.id}\``,
-      ephemeral: true
+               `**Add more roles:** Use \`/reaction-role-add message_id:${message.id}\``
     });
 
     console.log(`✅ Reaction role message created by ${interaction.user.tag} in ${channel.name} with ${parsedPairs.length} roles`);
 
   } catch (error) {
     console.error('❌ Error handling reaction role modal:', error);
-    if (!interaction.replied) {
+    console.error('Stack trace:', error.stack);
+    if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
         content: '❌ Error creating reaction role message. Please try again.',
         ephemeral: true
+      });
+    } else if (interaction.deferred) {
+      await interaction.editReply({
+        content: '❌ Error creating reaction role message. Please try again.'
       });
     }
   }
