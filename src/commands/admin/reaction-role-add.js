@@ -76,11 +76,11 @@ module.exports = {
 
       // Update the embed to show the new reaction role
       const allReactionRoles = await getReactionRolesByMessage(messageId);
-      
+
       if (message.embeds.length > 0) {
         const embed = message.embeds[0];
         let rolesList = '';
-        
+
         for (const rr of allReactionRoles) {
           const rrRole = interaction.guild.roles.cache.get(rr.role_id);
           if (rrRole) {
@@ -88,9 +88,19 @@ module.exports = {
           }
         }
 
+        // Get the base description (everything before "Available Roles")
+        let baseDescription = embed.description;
+
+        // Remove old "Available Roles" section if it exists
+        if (baseDescription.includes('\n\n**Available Roles:**')) {
+          baseDescription = baseDescription.split('\n\n**Available Roles:**')[0];
+        } else if (baseDescription.includes('\n\n*No reaction roles')) {
+          baseDescription = baseDescription.split('\n\n*No reaction roles')[0];
+        }
+
         const updatedEmbed = {
           ...embed.data,
-          description: embed.description.split('\n\n*No reaction roles')[0] + 
+          description: baseDescription +
                        '\n\n**Available Roles:**\n' + rolesList +
                        '\n*React with any emoji above to receive that role!*\n*Remove your reaction to remove the role.*'
         };

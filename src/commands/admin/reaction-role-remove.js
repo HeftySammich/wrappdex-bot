@@ -62,10 +62,19 @@ module.exports = {
 
       // Update the embed
       const allReactionRoles = await getReactionRolesByMessage(messageId);
-      
+
       if (message.embeds.length > 0) {
         const embed = message.embeds[0];
-        
+
+        // Get the base description (everything before "Available Roles")
+        let baseDescription = embed.description;
+
+        if (baseDescription.includes('\n\n**Available Roles:**')) {
+          baseDescription = baseDescription.split('\n\n**Available Roles:**')[0];
+        } else if (baseDescription.includes('\n\n*No reaction roles')) {
+          baseDescription = baseDescription.split('\n\n*No reaction roles')[0];
+        }
+
         if (allReactionRoles.length > 0) {
           let rolesList = '';
           for (const rr of allReactionRoles) {
@@ -77,7 +86,7 @@ module.exports = {
 
           const updatedEmbed = {
             ...embed.data,
-            description: embed.description.split('\n\n**Available Roles:**')[0] + 
+            description: baseDescription +
                          '\n\n**Available Roles:**\n' + rolesList +
                          '\n*React with any emoji above to receive that role!*\n*Remove your reaction to remove the role.*'
           };
@@ -87,7 +96,7 @@ module.exports = {
           // No more reaction roles
           const updatedEmbed = {
             ...embed.data,
-            description: embed.description.split('\n\n**Available Roles:**')[0] + 
+            description: baseDescription +
                          '\n\n*No reaction roles configured yet. Use `/reaction-role-add` to add emoji-role pairs.*'
           };
 
