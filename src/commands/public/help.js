@@ -16,7 +16,7 @@ module.exports = {
       // Create help embed
       // TODO: Customize this help message for your community
       const helpEmbed = new EmbedBuilder()
-        .setColor('#00ff00') // Customize this color for your brand
+        .setColor('#00A1D6') // Customize this color for your brand
         .setTitle('🆘 Help & Information')
         .setDescription('Learn how to verify your wallet and unlock roles based on your token holdings!')
         .addFields(

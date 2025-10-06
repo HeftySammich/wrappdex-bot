@@ -51,7 +51,7 @@ module.exports = {
         .setStyle(TextInputStyle.Short)
         .setRequired(false)
         .setMaxLength(100)
-        .setPlaceholder('#00ff40 | Footer text here');
+        .setPlaceholder('#00A1D6 | Footer text here');
 
       // Image URL input
       const imageInput = new TextInputBuilder()

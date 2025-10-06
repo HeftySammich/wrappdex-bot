@@ -160,7 +160,7 @@ async function handleEmbedModal(interaction) {
     }
 
     // Parse color and footer
-    let color = '#00ff40';
+    let color = '#00A1D6';
     let footer = '';
 
     if (colorAndFooter.trim()) {
