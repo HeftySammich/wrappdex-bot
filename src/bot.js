@@ -269,7 +269,28 @@ client.on('messageReactionAdd', async (reaction, user) => {
   if (user.bot) return;
 
   try {
-    // Get configuration from environment variables
+    const { getReactionRole } = require('./database/models/rules');
+
+    // Check if this is a custom reaction role first
+    const emoji = reaction.emoji.id ? `<:${reaction.emoji.name}:${reaction.emoji.id}>` : reaction.emoji.name;
+    const reactionRole = await getReactionRole(reaction.message.id, emoji);
+
+    if (reactionRole) {
+      // This is a custom reaction role
+      const member = await reaction.message.guild.members.fetch(user.id);
+      if (!member) return;
+
+      try {
+        await member.roles.add(reactionRole.role_id);
+        const role = reaction.message.guild.roles.cache.get(reactionRole.role_id);
+        console.log(`✅ Assigned reaction role ${role ? role.name : reactionRole.role_id} to ${user.tag} via ${emoji}`);
+      } catch (error) {
+        console.error(`❌ Error assigning reaction role to ${user.tag}:`, error.message);
+      }
+      return; // Don't process verification reaction if this was a custom reaction role
+    }
+
+    // If not a custom reaction role, check for verification reaction
     const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID;
     const VERIFIED_ROLE_ID = process.env.VERIFIED_ROLE_ID;
     const REACTION_EMOJI = process.env.REACTION_EMOJI;
@@ -324,7 +345,28 @@ client.on('messageReactionRemove', async (reaction, user) => {
   if (user.bot) return;
 
   try {
-    // Get configuration from environment variables
+    const { getReactionRole } = require('./database/models/rules');
+
+    // Check if this is a custom reaction role first
+    const emoji = reaction.emoji.id ? `<:${reaction.emoji.name}:${reaction.emoji.id}>` : reaction.emoji.name;
+    const reactionRole = await getReactionRole(reaction.message.id, emoji);
+
+    if (reactionRole) {
+      // This is a custom reaction role - remove it
+      const member = await reaction.message.guild.members.fetch(user.id);
+      if (!member) return;
+
+      try {
+        await member.roles.remove(reactionRole.role_id);
+        const role = reaction.message.guild.roles.cache.get(reactionRole.role_id);
+        console.log(`✅ Removed reaction role ${role ? role.name : reactionRole.role_id} from ${user.tag} via ${emoji}`);
+      } catch (error) {
+        console.error(`❌ Error removing reaction role from ${user.tag}:`, error.message);
+      }
+      return; // Don't process verification reaction if this was a custom reaction role
+    }
+
+    // If not a custom reaction role, check for verification reaction
     const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID;
     const VERIFIED_ROLE_ID = process.env.VERIFIED_ROLE_ID;
     const REACTION_EMOJI = process.env.REACTION_EMOJI;

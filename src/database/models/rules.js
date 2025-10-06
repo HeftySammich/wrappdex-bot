@@ -44,6 +44,20 @@ async function initializeRulesTable() {
         )
       `);
 
+      // PostgreSQL - Reaction roles table
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS reaction_roles (
+          id SERIAL PRIMARY KEY,
+          guild_id VARCHAR(255) NOT NULL,
+          channel_id VARCHAR(255) NOT NULL,
+          message_id VARCHAR(255) NOT NULL,
+          emoji VARCHAR(255) NOT NULL,
+          role_id VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(message_id, emoji)
+        )
+      `);
+
       console.log('✅ PostgreSQL tables initialized');
     } else {
       // SQLite - Rules table
@@ -94,6 +108,25 @@ async function initializeRulesTable() {
             giveaway_id TEXT NOT NULL,
             entered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(user_id, guild_id, giveaway_id)
+          )
+        `, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      // SQLite - Reaction roles table
+      await new Promise((resolve, reject) => {
+        db.run(`
+          CREATE TABLE IF NOT EXISTS reaction_roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id TEXT NOT NULL,
+            channel_id TEXT NOT NULL,
+            message_id TEXT NOT NULL,
+            emoji TEXT NOT NULL,
+            role_id TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(message_id, emoji)
           )
         `, (err) => {
           if (err) reject(err);
@@ -327,6 +360,124 @@ async function clearGiveawayEntries(guildId, giveawayId) {
   }
 }
 
+// ==================== REACTION ROLES ====================
+
+async function addReactionRole(guildId, channelId, messageId, emoji, roleId) {
+  try {
+    if (isProduction) {
+      await db.query(`
+        INSERT INTO reaction_roles (guild_id, channel_id, message_id, emoji, role_id)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (message_id, emoji) DO UPDATE SET role_id = $5
+      `, [guildId, channelId, messageId, emoji, roleId]);
+    } else {
+      await new Promise((resolve, reject) => {
+        db.run(`
+          INSERT OR REPLACE INTO reaction_roles (guild_id, channel_id, message_id, emoji, role_id)
+          VALUES (?, ?, ?, ?, ?)
+        `, [guildId, channelId, messageId, emoji, roleId], (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error adding reaction role:', error);
+    throw error;
+  }
+}
+
+async function getReactionRolesByMessage(messageId) {
+  try {
+    if (isProduction) {
+      const result = await db.query(`
+        SELECT * FROM reaction_roles WHERE message_id = $1
+      `, [messageId]);
+      return result.rows;
+    } else {
+      return new Promise((resolve, reject) => {
+        db.all(`
+          SELECT * FROM reaction_roles WHERE message_id = ?
+        `, [messageId], (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows || []);
+        });
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error getting reaction roles:', error);
+    return [];
+  }
+}
+
+async function getReactionRole(messageId, emoji) {
+  try {
+    if (isProduction) {
+      const result = await db.query(`
+        SELECT * FROM reaction_roles WHERE message_id = $1 AND emoji = $2
+      `, [messageId, emoji]);
+      return result.rows[0] || null;
+    } else {
+      return new Promise((resolve, reject) => {
+        db.get(`
+          SELECT * FROM reaction_roles WHERE message_id = ? AND emoji = ?
+        `, [messageId, emoji], (err, row) => {
+          if (err) reject(err);
+          else resolve(row || null);
+        });
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error getting reaction role:', error);
+    return null;
+  }
+}
+
+async function getAllReactionRolesByGuild(guildId) {
+  try {
+    if (isProduction) {
+      const result = await db.query(`
+        SELECT * FROM reaction_roles WHERE guild_id = $1 ORDER BY message_id, created_at
+      `, [guildId]);
+      return result.rows;
+    } else {
+      return new Promise((resolve, reject) => {
+        db.all(`
+          SELECT * FROM reaction_roles WHERE guild_id = ? ORDER BY message_id, created_at
+        `, [guildId], (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows || []);
+        });
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error getting all reaction roles:', error);
+    return [];
+  }
+}
+
+async function removeReactionRole(messageId, emoji) {
+  try {
+    if (isProduction) {
+      await db.query(`
+        DELETE FROM reaction_roles WHERE message_id = $1 AND emoji = $2
+      `, [messageId, emoji]);
+    } else {
+      await new Promise((resolve, reject) => {
+        db.run(`
+          DELETE FROM reaction_roles WHERE message_id = ? AND emoji = ?
+        `, [messageId, emoji], (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error removing reaction role:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   initializeRulesTable,
   addRule,
@@ -336,5 +487,10 @@ module.exports = {
   addGiveawayEntry,
   getGiveawayEntries,
   getUserGiveawayEntry,
-  clearGiveawayEntries
+  clearGiveawayEntries,
+  addReactionRole,
+  getReactionRolesByMessage,
+  getReactionRole,
+  getAllReactionRolesByGuild,
+  removeReactionRole
 };
