@@ -1,63 +1,95 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('reaction-role-setup')
-    .setDescription('Create a new reaction role message (admin only)')
+    .setDescription('Create a new reaction role message with modal (admin only)')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addChannelOption(option =>
       option.setName('channel')
         .setDescription('Channel to post the reaction role message')
         .setRequired(true)
-    )
-    .addStringOption(option =>
-      option.setName('title')
-        .setDescription('Title of the reaction role embed')
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option.setName('description')
-        .setDescription('Description text for the reaction role embed')
-        .setRequired(true)
     ),
 
   async execute(interaction) {
     try {
-      await interaction.deferReply({ ephemeral: true });
-
       const channel = interaction.options.getChannel('channel');
-      const title = interaction.options.getString('title');
-      const description = interaction.options.getString('description');
 
-      // Create the embed
-      const embed = new EmbedBuilder()
-        .setColor('#00A1D6')
-        .setTitle(title)
-        .setDescription(description + '\n\n*No reaction roles configured yet. Use `/reaction-role-add` to add emoji-role pairs.*')
-        .setFooter({
-          text: `Created by ${interaction.user.username}`,
-          iconURL: interaction.user.displayAvatarURL()
-        })
-        .setTimestamp();
+      // Store channel ID for later use
+      const channelId = channel.id;
 
-      // Send the embed to the target channel
-      const message = await channel.send({ embeds: [embed] });
+      // Create modal
+      const modal = new ModalBuilder()
+        .setCustomId(`reaction_role_modal_${channelId}`)
+        .setTitle('Create Reaction Role Message');
 
-      await interaction.editReply({
-        content: `✅ **Reaction Role Message Created!**\n\n` +
-                 `📍 **Channel:** ${channel}\n` +
-                 `📝 **Message ID:** \`${message.id}\`\n\n` +
-                 `**Next Steps:**\n` +
-                 `Use \`/reaction-role-add message_id:${message.id} emoji:🎮 role:@RoleName\` to add reaction roles!`
-      });
+      // Title and Description combined (to save space for more pairs)
+      const titleDescInput = new TextInputBuilder()
+        .setCustomId('title_desc')
+        .setLabel('Title | Description (separate with |)')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('Choose Your Roles! | React below to get roles')
+        .setRequired(true)
+        .setMaxLength(300);
 
-      console.log(`✅ Reaction role message created by ${interaction.user.tag} in ${channel.name} (ID: ${message.id})`);
+      // Emoji-Role Pair 1
+      const pair1Input = new TextInputBuilder()
+        .setCustomId('pair1')
+        .setLabel('Pair 1: emoji @role or emoji role_id')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('🎮 @Gamer')
+        .setRequired(false)
+        .setMaxLength(100);
+
+      // Emoji-Role Pair 2
+      const pair2Input = new TextInputBuilder()
+        .setCustomId('pair2')
+        .setLabel('Pair 2: emoji @role or emoji role_id')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('🎨 @Artist')
+        .setRequired(false)
+        .setMaxLength(100);
+
+      // Emoji-Role Pair 3
+      const pair3Input = new TextInputBuilder()
+        .setCustomId('pair3')
+        .setLabel('Pair 3: emoji @role or emoji role_id')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('💰 @Trader')
+        .setRequired(false)
+        .setMaxLength(100);
+
+      // Emoji-Role Pair 4
+      const pair4Input = new TextInputBuilder()
+        .setCustomId('pair4')
+        .setLabel('Pair 4: emoji @role or emoji role_id')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('📰 @News')
+        .setRequired(false)
+        .setMaxLength(100);
+
+      // Add inputs to action rows (max 5 rows in a modal)
+      const row1 = new ActionRowBuilder().addComponents(titleDescInput);
+      const row2 = new ActionRowBuilder().addComponents(pair1Input);
+      const row3 = new ActionRowBuilder().addComponents(pair2Input);
+      const row4 = new ActionRowBuilder().addComponents(pair3Input);
+      const row5 = new ActionRowBuilder().addComponents(pair4Input);
+
+      modal.addComponents(row1, row2, row3, row4, row5);
+
+      // Show modal
+      await interaction.showModal(modal);
+
+      console.log(`📝 Reaction role modal shown to ${interaction.user.tag} for channel ${channel.name}`);
 
     } catch (error) {
       console.error('❌ Error in reaction-role-setup command:', error);
-      await interaction.editReply({
-        content: '❌ **Error creating reaction role message.** Please try again or check bot permissions.'
-      });
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({
+          content: '❌ **Error showing modal.** Please try again.',
+          ephemeral: true
+        });
+      }
     }
   }
 };

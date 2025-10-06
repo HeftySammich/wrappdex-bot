@@ -37,6 +37,20 @@ async function deployCommands() {
 
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
+    // Clear global commands if deploying to guild (prevents duplicates)
+    if (process.env.DISCORD_GUILD_ID) {
+      try {
+        console.log('🧹 Clearing global commands to prevent duplicates...');
+        await rest.put(
+          Routes.applicationCommands(process.env.DISCORD_APPLICATION_ID),
+          { body: [] }
+        );
+        console.log('✅ Global commands cleared');
+      } catch (error) {
+        console.log('⚠️ Could not clear global commands:', error.message);
+      }
+    }
+
     // Deploy to specific guild for instant updates (if DISCORD_GUILD_ID is set)
     // Otherwise deploy globally (takes up to 1 hour)
     if (process.env.DISCORD_GUILD_ID) {
@@ -240,6 +254,157 @@ async function handleEmbedModal(interaction) {
   }
 }
 
+// Handle reaction role modal submissions
+async function handleReactionRoleModal(interaction) {
+  try {
+    const { addReactionRole, getReactionRolesByMessage } = require('./database/models/rules');
+    const { EmbedBuilder } = require('discord.js');
+
+    // Extract channel ID from custom ID
+    const channelId = interaction.customId.split('_')[3];
+    const channel = interaction.guild.channels.cache.get(channelId);
+
+    if (!channel) {
+      await interaction.reply({ content: '❌ Channel not found!', ephemeral: true });
+      return;
+    }
+
+    // Get form values
+    const titleDesc = interaction.fields.getTextInputValue('title_desc');
+    const pair1 = interaction.fields.getTextInputValue('pair1') || '';
+    const pair2 = interaction.fields.getTextInputValue('pair2') || '';
+    const pair3 = interaction.fields.getTextInputValue('pair3') || '';
+    const pair4 = interaction.fields.getTextInputValue('pair4') || '';
+
+    // Parse title and description
+    let title = 'Reaction Roles';
+    let description = 'React below to get roles!';
+
+    if (titleDesc.includes('|')) {
+      const [t, d] = titleDesc.split('|').map(s => s.trim());
+      if (t) title = t;
+      if (d) description = d;
+    } else {
+      title = titleDesc.trim();
+    }
+
+    // Parse emoji-role pairs
+    const pairs = [pair1, pair2, pair3, pair4].filter(p => p.trim());
+    const parsedPairs = [];
+
+    for (const pair of pairs) {
+      const trimmed = pair.trim();
+      if (!trimmed) continue;
+
+      // Split by space - first part is emoji, rest is role
+      const parts = trimmed.split(' ');
+      if (parts.length < 2) {
+        await interaction.reply({
+          content: `❌ Invalid format for pair: "${trimmed}"\n\nUse format: \`emoji @role\` or \`emoji role_id\``,
+          ephemeral: true
+        });
+        return;
+      }
+
+      const emoji = parts[0];
+      const roleInput = parts.slice(1).join(' ');
+
+      // Parse role (either @mention or ID)
+      let roleId = null;
+      if (roleInput.startsWith('<@&') && roleInput.endsWith('>')) {
+        // Role mention format
+        roleId = roleInput.slice(3, -1);
+      } else if (/^\d+$/.test(roleInput)) {
+        // Role ID format
+        roleId = roleInput;
+      } else {
+        await interaction.reply({
+          content: `❌ Invalid role format: "${roleInput}"\n\nUse \`@role\` or role ID`,
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Verify role exists
+      const role = interaction.guild.roles.cache.get(roleId);
+      if (!role) {
+        await interaction.reply({
+          content: `❌ Role not found: ${roleInput}`,
+          ephemeral: true
+        });
+        return;
+      }
+
+      parsedPairs.push({ emoji, roleId, roleName: role.name });
+    }
+
+    if (parsedPairs.length === 0) {
+      await interaction.reply({
+        content: '❌ You must provide at least one emoji-role pair!',
+        ephemeral: true
+      });
+      return;
+    }
+
+    // Create the embed
+    let rolesList = '';
+    for (const pair of parsedPairs) {
+      rolesList += `${pair.emoji} - ${pair.roleName}\n`;
+    }
+
+    const embed = new EmbedBuilder()
+      .setColor('#00A1D6')
+      .setTitle(title)
+      .setDescription(description + '\n\n**Available Roles:**\n' + rolesList + '\n*React with any emoji above to receive that role!*\n*Remove your reaction to remove the role.*')
+      .setFooter({
+        text: `Created by ${interaction.user.username}`,
+        iconURL: interaction.user.displayAvatarURL()
+      })
+      .setTimestamp();
+
+    // Send the embed
+    const message = await channel.send({ embeds: [embed] });
+
+    // Add reactions and save to database
+    for (const pair of parsedPairs) {
+      try {
+        await message.react(pair.emoji);
+        await addReactionRole(interaction.guildId, channelId, message.id, pair.emoji, pair.roleId);
+      } catch (error) {
+        console.error(`❌ Error adding reaction ${pair.emoji}:`, error.message);
+        await interaction.reply({
+          content: `❌ Invalid emoji: ${pair.emoji}\n\nMake sure it's a valid emoji or custom emoji from this server.`,
+          ephemeral: true
+        });
+        // Delete the message if we can't add reactions
+        await message.delete();
+        return;
+      }
+    }
+
+    await interaction.reply({
+      content: `✅ **Reaction Role Message Created!**\n\n` +
+               `📍 **Channel:** ${channel}\n` +
+               `📝 **Message ID:** \`${message.id}\`\n` +
+               `🎭 **Roles:** ${parsedPairs.length}\n\n` +
+               `Users can now react to get roles!\n\n` +
+               `**Add more roles:** Use \`/reaction-role-add message_id:${message.id}\``,
+      ephemeral: true
+    });
+
+    console.log(`✅ Reaction role message created by ${interaction.user.tag} in ${channel.name} with ${parsedPairs.length} roles`);
+
+  } catch (error) {
+    console.error('❌ Error handling reaction role modal:', error);
+    if (!interaction.replied) {
+      await interaction.reply({
+        content: '❌ Error creating reaction role message. Please try again.',
+        ephemeral: true
+      });
+    }
+  }
+}
+
 client.on('interactionCreate', async (interaction) => {
   // Handle slash commands
   if (interaction.isCommand()) {
@@ -268,6 +433,8 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.isModalSubmit()) {
     if (interaction.customId.startsWith('embed_modal_')) {
       await handleEmbedModal(interaction);
+    } else if (interaction.customId.startsWith('reaction_role_modal_')) {
+      await handleReactionRoleModal(interaction);
     }
   }
 });
