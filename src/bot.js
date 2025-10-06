@@ -37,12 +37,21 @@ async function deployCommands() {
 
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-    await rest.put(
-      Routes.applicationCommands(process.env.DISCORD_APPLICATION_ID),
-      { body: commands }
-    );
-
-    console.log(`✅ Successfully deployed ${commands.length} slash commands!`);
+    // Deploy to specific guild for instant updates (if DISCORD_GUILD_ID is set)
+    // Otherwise deploy globally (takes up to 1 hour)
+    if (process.env.DISCORD_GUILD_ID) {
+      await rest.put(
+        Routes.applicationGuildCommands(process.env.DISCORD_APPLICATION_ID, process.env.DISCORD_GUILD_ID),
+        { body: commands }
+      );
+      console.log(`✅ Successfully deployed ${commands.length} slash commands to guild ${process.env.DISCORD_GUILD_ID} (instant)!`);
+    } else {
+      await rest.put(
+        Routes.applicationCommands(process.env.DISCORD_APPLICATION_ID),
+        { body: commands }
+      );
+      console.log(`✅ Successfully deployed ${commands.length} slash commands globally (may take up to 1 hour)!`);
+    }
   } catch (error) {
     console.error('❌ Error deploying commands:', error);
   }
