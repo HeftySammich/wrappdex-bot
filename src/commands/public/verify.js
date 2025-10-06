@@ -55,13 +55,21 @@ module.exports = {
       );
       console.log(`👤 Added user ${interaction.user.tag} to automatic scanning`);
 
+      // Build success message
+      let successMessage = `✅ **Verification Complete!**\n\n` +
+                           `🔍 **Wallet:** \`${accountId}\`\n` +
+                           `🎯 **Tokens Found:** ${nftData.quantity}\n`;
+
+      // Only show serial numbers if they exist (for NFTs)
+      if (nftData.serials && nftData.serials.length > 0) {
+        successMessage += `📋 **Serial Numbers:** ${nftData.serials.join(', ')}\n`;
+      }
+
+      successMessage += `\n🎭 **Roles Assigned:** ${assignedRoles.length > 0 ? assignedRoles.join(', ') : 'None (no matching rules)'}\n\n` +
+                        `🔄 **Auto-Scan Enabled:** Your roles will be automatically updated every 30 minutes!`;
+
       await interaction.editReply({
-        content: `✅ **Verification Complete!**\n\n` +
-                 `🔍 **Wallet:** \`${accountId}\`\n` +
-                 `🎯 **Tokens Found:** ${nftData.quantity}\n` +
-                 `📋 **Serial Numbers:** ${nftData.serials.join(', ')}\n\n` +
-                 `🎭 **Roles Assigned:** ${assignedRoles.length > 0 ? assignedRoles.join(', ') : 'None (no matching rules)'}\n\n` +
-                 `🔄 **Auto-Scan Enabled:** Your roles will be automatically updated every 30 minutes!`
+        content: successMessage
       });
     } catch (error) {
       console.error('❌ Error in verify command:', error);
