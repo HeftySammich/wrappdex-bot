@@ -38,22 +38,34 @@ module.exports = {
 
       let assignedRoles = [];
       for (const roleId of roles) {
-        const success = await assignRole(interaction.member, roleId);
-        if (success) {
-          const role = interaction.guild.roles.cache.get(roleId);
-          assignedRoles.push(role ? role.name : roleId);
+        try {
+          const success = await assignRole(interaction.member, roleId);
+          if (success) {
+            const role = interaction.guild.roles.cache.get(roleId);
+            assignedRoles.push(role ? role.name : roleId);
+            console.log(`✅ Assigned role: ${role ? role.name : roleId}`);
+          } else {
+            console.log(`⚠️ Failed to assign role: ${roleId}`);
+          }
+        } catch (roleError) {
+          console.error(`❌ Error assigning role ${roleId}:`, roleError.message);
         }
       }
 
       // Track this user for automatic scanning
-      await addVerifiedUser(
-        interaction.user.id,
-        interaction.guildId,
-        accountId,
-        nftData.quantity,
-        nftData.serials
-      );
-      console.log(`👤 Added user ${interaction.user.tag} to automatic scanning`);
+      try {
+        await addVerifiedUser(
+          interaction.user.id,
+          interaction.guildId,
+          accountId,
+          nftData.quantity,
+          nftData.serials
+        );
+        console.log(`👤 Added user ${interaction.user.tag} to automatic scanning`);
+      } catch (dbError) {
+        console.error(`❌ Error adding user to automatic scanning:`, dbError.message);
+        // Continue anyway - don't fail the whole verification
+      }
 
       // Build success message
       let successMessage = `✅ **Verification Complete!**\n\n` +
@@ -68,15 +80,22 @@ module.exports = {
       successMessage += `\n🎭 **Roles Assigned:** ${assignedRoles.length > 0 ? assignedRoles.join(', ') : 'None (no matching rules)'}\n\n` +
                         `🔄 **Auto-Scan Enabled:** Your roles will be automatically updated every 30 minutes!`;
 
+      console.log(`📤 Sending verification response to ${interaction.user.tag}`);
       await interaction.editReply({
         content: successMessage
       });
+      console.log(`✅ Verification response sent successfully`);
     } catch (error) {
       console.error('❌ Error in verify command:', error);
-      await interaction.editReply({
-        content: `❌ **Verification Failed**\n\n` +
-                 `There was an error checking your wallet. Please try again later.`
-      });
+      console.error('❌ Stack trace:', error.stack);
+      try {
+        await interaction.editReply({
+          content: `❌ **Verification Failed**\n\n` +
+                   `There was an error checking your wallet. Please try again later.`
+        });
+      } catch (replyError) {
+        console.error('❌ Could not send error reply:', replyError.message);
+      }
     }
   }
 };
