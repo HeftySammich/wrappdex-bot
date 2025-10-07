@@ -104,117 +104,91 @@ class DailyMessage {
     }
   }
 
-  // Fetch collection data using Mirror Node + SentX
+  // Fetch token data using Mirror Node (for fungible HTS tokens)
   async getSlimeData() {
     try {
-      console.log('📊 Fetching collection data from Mirror Node and SentX...');
+      console.log('📊 Fetching token data from Mirror Node...');
 
       // Get data in parallel
-      const [uniqueHolders, newTokenSupply, marketplaceData] = await Promise.all([
-        this.getUniqueHolders(),
-        this.getNewTokenSupply(),
-        this.getMarketplaceData()
+      const [tokenInfo, uniqueHolders] = await Promise.all([
+        this.getTokenInfo(),
+        this.getUniqueHolders()
       ]);
 
       return {
-        supply: newTokenSupply,
+        supply: tokenInfo.totalSupply,
         holders: uniqueHolders,
-        floorPrice: marketplaceData.floorPrice,
-        listedCount: marketplaceData.listedCount,
-        volume24h: marketplaceData.volume24h,
-        recentSales: marketplaceData.recentSales
+        decimals: tokenInfo.decimals,
+        name: tokenInfo.name,
+        symbol: tokenInfo.symbol
       };
     } catch (error) {
-      console.error('❌ Error fetching collection data:', error);
+      console.error('❌ Error fetching token data:', error);
       return {
         supply: 0,
         holders: 0,
-        floorPrice: 0,
-        listedCount: 0,
-        volume24h: 0,
-        recentSales: 0
+        decimals: 8,
+        name: 'Unknown',
+        symbol: 'Unknown'
       };
     }
   }
 
-  // Get unique holders across both tokens using Mirror Node with pagination
-  async getUniqueHolders() {
+  // Get token info (total supply, decimals, etc.) from Mirror Node
+  async getTokenInfo() {
     try {
-      const allHolders = new Set();
+      const tokenId = TOKEN_IDS[0]; // Use first token ID (should be 0.0.9356476)
+      console.log(`🔍 Fetching token info for ${tokenId}...`);
 
-      // Query both tokens with pagination
-      for (const tokenId of TOKEN_IDS) {
-        try {
-          console.log(`🔍 Fetching all NFTs for token ${tokenId}...`);
+      const response = await axios.get(`${HEDERA_MIRROR_NODE_URL}/api/v1/tokens/${tokenId}`);
+      const tokenData = response.data;
 
-          let nextLink = `${HEDERA_MIRROR_NODE_URL}/api/v1/tokens/${tokenId}/nfts?limit=100&order=asc`;
-          let totalNFTs = 0;
+      const totalSupply = parseInt(tokenData.total_supply) / Math.pow(10, parseInt(tokenData.decimals));
 
-          // Paginate through all NFTs for this token
-          while (nextLink) {
-            const response = await axios.get(nextLink);
-            const data = response.data;
-            const nfts = data.nfts || [];
+      console.log(`📊 Token ${tokenId}: Total supply = ${totalSupply.toLocaleString()}`);
 
-            // Add all account IDs to the set (automatically deduplicates)
-            nfts.forEach(nft => {
-              if (nft.account_id) {
-                allHolders.add(nft.account_id);
-              }
-            });
-
-            totalNFTs += nfts.length;
-
-            // Check if there's a next page
-            nextLink = data.links && data.links.next ?
-              `${HEDERA_MIRROR_NODE_URL}${data.links.next}` :
-              null;
-
-            console.log(`📄 Token ${tokenId}: Processed ${totalNFTs} NFTs so far...`);
-
-            // Add small delay to avoid overwhelming the API
-            if (nextLink) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-          }
-
-          console.log(`📊 Token ${tokenId}: Total ${totalNFTs} NFTs processed`);
-        } catch (tokenError) {
-          console.error(`❌ Error fetching holders for token ${tokenId}:`, tokenError.message);
-        }
-      }
-
-      const uniqueHolderCount = allHolders.size;
-      console.log(`👥 Total unique holders across both tokens: ${uniqueHolderCount}`);
-      return uniqueHolderCount;
+      return {
+        totalSupply: Math.floor(totalSupply),
+        decimals: parseInt(tokenData.decimals),
+        name: tokenData.name,
+        symbol: tokenData.symbol
+      };
     } catch (error) {
-      console.error('❌ Error getting unique holders:', error);
-      return 0;
+      console.error('❌ Error getting token info:', error);
+      return {
+        totalSupply: 0,
+        decimals: 8,
+        name: 'Unknown',
+        symbol: 'Unknown'
+      };
     }
   }
 
-  // Get supply count for new token only using Mirror Node with pagination
-  async getNewTokenSupply() {
+  // Get unique holders for fungible token using Mirror Node with pagination
+  async getUniqueHolders() {
     try {
-      console.log(`🔍 Counting minted NFTs for new token ${NEW_TOKEN_ID}...`);
+      const tokenId = TOKEN_IDS[0]; // Use first token ID (should be 0.0.9356476)
+      console.log(`🔍 Fetching token balances for ${tokenId}...`);
 
-      let nextLink = `${HEDERA_MIRROR_NODE_URL}/api/v1/tokens/${NEW_TOKEN_ID}/nfts?limit=100&order=asc`;
-      let totalSupply = 0;
+      let nextLink = `${HEDERA_MIRROR_NODE_URL}/api/v1/tokens/${tokenId}/balances?limit=100&order=asc`;
+      let totalHolders = 0;
 
-      // Paginate through all NFTs for this token
+      // Paginate through all token balances
       while (nextLink) {
         const response = await axios.get(nextLink);
         const data = response.data;
-        const nfts = data.nfts || [];
+        const balances = data.balances || [];
 
-        totalSupply += nfts.length;
+        // Count accounts with non-zero balance
+        const holdersInPage = balances.filter(b => parseInt(b.balance) > 0).length;
+        totalHolders += holdersInPage;
 
         // Check if there's a next page
         nextLink = data.links && data.links.next ?
           `${HEDERA_MIRROR_NODE_URL}${data.links.next}` :
           null;
 
-        console.log(`📄 New token: Counted ${totalSupply} NFTs so far...`);
+        console.log(`📄 Token ${tokenId}: Counted ${totalHolders} holders so far...`);
 
         // Add small delay to avoid overwhelming the API
         if (nextLink) {
@@ -222,74 +196,18 @@ class DailyMessage {
         }
       }
 
-      console.log(`📊 New token (${NEW_TOKEN_ID}) supply: ${totalSupply} NFTs`);
-      return totalSupply;
+      console.log(`👥 Total holders for token ${tokenId}: ${totalHolders}`);
+      return totalHolders;
     } catch (error) {
-      console.error('❌ Error getting new token supply:', error);
+      console.error('❌ Error getting unique holders:', error);
       return 0;
     }
   }
 
-  // Get marketplace data from SentX for new token only
-  async getMarketplaceData() {
-    try {
-      if (!SENTX_API_KEY) {
-        console.warn('⚠️ SENTX_API_KEY not configured - marketplace data unavailable');
-        return {
-          floorPrice: 0,
-          listedCount: 0,
-          volume24h: 0,
-          recentSales: 0
-        };
-      }
 
-      console.log(`🔍 Fetching marketplace data for token ${NEW_TOKEN_ID} from SentX API...`);
-
-      // Get listings data for the specific token
-      const listingsResponse = await axios.get(`${SENTX_API_BASE_URL}/v1/public/market/listings`, {
-        params: {
-          apikey: SENTX_API_KEY,
-          token: NEW_TOKEN_ID,
-          limit: 10000 // Get all listings to count them
-        }
-      });
-
-      const listings = listingsResponse.data.marketListings || [];
-      const listedCount = listings.length;
-
-      // Calculate floor price from listings
-      let floorPrice = 0;
-      if (listings.length > 0) {
-        const prices = listings.map(listing => parseFloat(listing.salePrice || 0)).filter(price => price > 0);
-        if (prices.length > 0) {
-          floorPrice = Math.min(...prices); // Price is already in HBAR
-        }
-      }
-
-      console.log(`📊 SentX marketplace data: ${listedCount} listings, floor price: ${floorPrice} HBAR`);
-
-      return {
-        floorPrice,
-        listedCount,
-        volume24h: 0, // TODO: Implement if SentX provides volume endpoint
-        recentSales: 0 // TODO: Implement if SentX provides sales endpoint
-      };
-    } catch (error) {
-      console.error('❌ Error fetching marketplace data from SentX:', error.message);
-      if (error.response) {
-        console.error('❌ SentX API response:', error.response.status, error.response.data);
-      }
-      return {
-        floorPrice: 0,
-        listedCount: 0,
-        volume24h: 0,
-        recentSales: 0
-      };
-    }
-  }
 
   // Create the daily report embed
-  async createDailyReportEmbed(hbarData, slimeData) {
+  async createDailyReportEmbed(hbarData, tokenData) {
     const today = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -297,11 +215,10 @@ class DailyMessage {
       day: 'numeric'
     });
 
-    // TODO: Customize this daily report embed for your community
     const embed = new EmbedBuilder()
       .setTitle('🌟 Daily Collection Report')
-      .setColor('#00ff40') // Customize this color for your brand
-      .setDescription('Your daily snapshot of HBAR price and token collection statistics')
+      .setColor('#00A1D6') // WRAPpDEX brand color
+      .setDescription('Your daily snapshot of HBAR price and token statistics')
       .setTimestamp();
 
     // HBAR Price Section
@@ -321,38 +238,19 @@ class DailyMessage {
       });
     }
 
-    // Token Collection Section
-    const floorPriceDisplay = slimeData.floorPrice > 0 ?
-      `${slimeData.floorPrice} HBAR` :
-      'No active listings';
-
-    const listedPercentage = slimeData.supply > 0 ?
-      `${((slimeData.listedCount / slimeData.supply) * 100).toFixed(1)}%` :
-      '0%';
-
+    // Hbar.ħ Token Stats Section
     embed.addFields({
-      name: '🎯 Token Collection Stats',
+      name: '🎯 Hbar.ħ Stats',
       value:
-        `**Total Supply:** ${slimeData.supply.toLocaleString()} tokens\n` +
-        `**Unique Holders:** ${slimeData.holders.toLocaleString()}\n` +
-        `**Floor Price:** ${floorPriceDisplay}\n` +
-        `**Listed for Sale:** ${slimeData.listedCount} tokens (${listedPercentage} of supply)`,
+        `**Total Supply:** ${tokenData.supply.toLocaleString()} ${tokenData.symbol || 'tokens'}\n` +
+        `**Unique Holders:** ${tokenData.holders.toLocaleString()}\n` +
+        `**Token Name:** ${tokenData.name || 'Hbar.ħ'}\n` +
+        `**Decimals:** ${tokenData.decimals}`,
       inline: false
     });
 
-    // 24h Activity Section
-    if (slimeData.volume24h > 0 || slimeData.recentSales > 0) {
-      embed.addFields({
-        name: '📈 24-Hour Trading Activity',
-        value:
-          `**Trading Volume:** ${slimeData.volume24h.toFixed(2)} HBAR\n` +
-          `**Sales Count:** ${slimeData.recentSales} transaction${slimeData.recentSales !== 1 ? 's' : ''}`,
-        inline: false
-      });
-    }
-
     embed.setFooter({
-      text: `${today} • Data from Hedera Mirror Node, SentX & CoinGecko`
+      text: `${today} • Data from Hedera Mirror Node & CoinGecko`
     });
 
     return embed;
