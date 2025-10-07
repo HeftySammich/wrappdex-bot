@@ -85,7 +85,7 @@ class DailyMessage {
   // Fetch HBAR price data from CoinGecko
   async getHbarData() {
     try {
-      const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=hedera-hashgraph&vs_currencies=usd&include_market_cap=true&include_24hr_change=true');
+      const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=hedera-hashgraph&vs_currencies=usd&include_market_cap=true&include_24hr_change=true', { timeout: 10000 });
 
       const hbarData = response.data['hedera-hashgraph'];
 
@@ -140,7 +140,7 @@ class DailyMessage {
       const tokenId = TOKEN_IDS[0]; // Use first token ID (should be 0.0.9356476)
       console.log(`🔍 Fetching token info for ${tokenId}...`);
 
-      const response = await axios.get(`${HEDERA_MIRROR_NODE_URL}/api/v1/tokens/${tokenId}`);
+      const response = await axios.get(`${HEDERA_MIRROR_NODE_URL}/api/v1/tokens/${tokenId}`, { timeout: 10000 });
       const tokenData = response.data;
 
       const totalSupply = parseInt(tokenData.total_supply) / Math.pow(10, parseInt(tokenData.decimals));
@@ -175,7 +175,7 @@ class DailyMessage {
 
       // Paginate through all token balances
       while (nextLink) {
-        const response = await axios.get(nextLink);
+        const response = await axios.get(nextLink, { timeout: 10000 });
         const data = response.data;
         const balances = data.balances || [];
 

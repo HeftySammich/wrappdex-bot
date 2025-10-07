@@ -7,7 +7,7 @@ const { TOKEN_IDS, HEDERA_MIRROR_NODE_URL } = require('../utils/constants');
 async function getTokenType(tokenId) {
   try {
     const url = `${HEDERA_MIRROR_NODE_URL}/api/v1/tokens/${tokenId}`;
-    const response = await axios.get(url);
+    const response = await axios.get(url, { timeout: 10000 }); // 10 second timeout
     return response.data.type; // Returns "FUNGIBLE_COMMON" or "NON_FUNGIBLE_UNIQUE"
   } catch (error) {
     console.error(`❌ Error getting token type for ${tokenId}:`, error.message);
@@ -35,7 +35,7 @@ async function getNFTData(accountId) {
           const url = `${HEDERA_MIRROR_NODE_URL}/api/v1/accounts/${accountId}/tokens?token.id=${tokenId}`;
           console.log(`🔍 Querying fungible balance: ${url}`);
 
-          const response = await axios.get(url);
+          const response = await axios.get(url, { timeout: 10000 }); // 10 second timeout
           const tokens = response.data.tokens || [];
 
           if (tokens.length > 0) {
@@ -57,7 +57,7 @@ async function getNFTData(accountId) {
           const url = `${HEDERA_MIRROR_NODE_URL}/api/v1/accounts/${accountId}/nfts?token.id=${tokenId}`;
           console.log(`🔍 Querying NFTs: ${url}`);
 
-          const response = await axios.get(url);
+          const response = await axios.get(url, { timeout: 10000 }); // 10 second timeout
           const nfts = response.data.nfts || [];
 
           console.log(`📊 Token ${tokenId}: ${nfts.length} NFTs found`);
