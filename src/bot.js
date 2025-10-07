@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, EmbedBuilder, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, EmbedBuilder, REST, Routes } = require('discord.js');
 const AutoScanner = require('./services/autoScanner');
 const HederaMirrorMonitor = require('./services/hederaMirrorMonitor');
 const DailyMessage = require('./services/dailyMessage');
@@ -16,6 +16,11 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.GuildMessages
+  ],
+  partials: [
+    Partials.Message,
+    Partials.Channel,
+    Partials.Reaction
   ]
 });
 
@@ -468,6 +473,16 @@ client.on('messageReactionAdd', async (reaction, user) => {
   if (user.bot) return;
 
   try {
+    // Fetch partial reactions (for messages not in cache)
+    if (reaction.partial) {
+      try {
+        await reaction.fetch();
+      } catch (error) {
+        console.error('❌ Error fetching reaction:', error);
+        return;
+      }
+    }
+
     const { getReactionRole } = require('./database/models/rules');
 
     // Check if this is a custom reaction role first
@@ -544,6 +559,16 @@ client.on('messageReactionRemove', async (reaction, user) => {
   if (user.bot) return;
 
   try {
+    // Fetch partial reactions (for messages not in cache)
+    if (reaction.partial) {
+      try {
+        await reaction.fetch();
+      } catch (error) {
+        console.error('❌ Error fetching reaction:', error);
+        return;
+      }
+    }
+
     const { getReactionRole } = require('./database/models/rules');
 
     // Check if this is a custom reaction role first
