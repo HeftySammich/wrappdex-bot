@@ -207,35 +207,36 @@ class DailyMessage {
     }
   }
 
-  // Get DexScreener data for HBAR.ℏ token
+  // Get DexScreener data for HBAR.ℏ token using pool address
   async getDexScreenerData() {
     try {
-      const tokenId = TOKEN_IDS[0]; // 0.0.9356476
-      console.log(`🔍 Fetching DexScreener data for ${tokenId}...`);
+      // HBAR.ℏ / WHBAR pool address on SaucerSwap
+      const poolAddress = '0x31d6b803a960b818cce3A85f0bEF7C4C566B7919';
+      console.log(`🔍 Fetching DexScreener data for HBAR.ℏ / WHBAR pool...`);
 
       const response = await axios.get(
-        `https://api.dexscreener.com/token-pairs/v1/hedera/${tokenId}`,
+        `https://api.dexscreener.com/latest/dex/pairs/hedera/${poolAddress}`,
         { timeout: 10000 }
       );
 
-      // DexScreener returns an array of pairs - use the first one with highest liquidity
-      const pairs = response.data;
-      if (!pairs || pairs.length === 0) {
-        console.warn('⚠️ No DexScreener pairs found for token');
+      // DexScreener returns a pairs array
+      const data = response.data;
+      if (!data || !data.pairs || data.pairs.length === 0) {
+        console.warn('⚠️ No DexScreener pairs found for HBAR.ℏ');
         return { price: 0, marketCap: 0 };
       }
 
-      // Sort by liquidity and take the most liquid pair
-      const mainPair = pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+      // Get the first pair (should be HBAR.ℏ / WHBAR)
+      const pair = data.pairs[0];
 
-      console.log(`💰 DexScreener price: $${mainPair.priceUsd}, Market Cap: $${mainPair.marketCap}`);
+      console.log(`💰 DexScreener - HBAR.ℏ price: $${pair.priceUsd}, Market Cap: $${pair.marketCap || 'N/A'}`);
 
       return {
-        price: parseFloat(mainPair.priceUsd) || 0,
-        marketCap: mainPair.marketCap || 0
+        price: parseFloat(pair.priceUsd) || 0,
+        marketCap: pair.marketCap || 0
       };
     } catch (error) {
-      console.error('❌ Error fetching DexScreener data:', error);
+      console.error('❌ Error fetching DexScreener data:', error.message);
       return { price: 0, marketCap: 0 };
     }
   }
