@@ -107,29 +107,32 @@ class DailyMessage {
   // Fetch token data using Mirror Node (for fungible HTS tokens)
   async getSlimeData() {
     try {
-      console.log('📊 Fetching token data from Mirror Node...');
+      console.log('📊 Fetching token data from Mirror Node and DexScreener...');
 
       // Get data in parallel
-      const [tokenInfo, uniqueHolders] = await Promise.all([
+      const [tokenInfo, uniqueHolders, dexData] = await Promise.all([
         this.getTokenInfo(),
-        this.getUniqueHolders()
+        this.getUniqueHolders(),
+        this.getDexScreenerData()
       ]);
 
       return {
         supply: tokenInfo.totalSupply,
         holders: uniqueHolders,
-        decimals: tokenInfo.decimals,
         name: tokenInfo.name,
-        symbol: tokenInfo.symbol
+        symbol: tokenInfo.symbol,
+        price: dexData.price,
+        marketCap: dexData.marketCap
       };
     } catch (error) {
       console.error('❌ Error fetching token data:', error);
       return {
         supply: 0,
         holders: 0,
-        decimals: 8,
         name: 'Unknown',
-        symbol: 'Unknown'
+        symbol: 'Unknown',
+        price: 0,
+        marketCap: 0
       };
     }
   }
@@ -204,6 +207,39 @@ class DailyMessage {
     }
   }
 
+  // Get DexScreener data for HBAR.ℏ token
+  async getDexScreenerData() {
+    try {
+      const tokenId = TOKEN_IDS[0]; // 0.0.9356476
+      console.log(`🔍 Fetching DexScreener data for ${tokenId}...`);
+
+      const response = await axios.get(
+        `https://api.dexscreener.com/token-pairs/v1/hedera/${tokenId}`,
+        { timeout: 10000 }
+      );
+
+      // DexScreener returns an array of pairs - use the first one with highest liquidity
+      const pairs = response.data;
+      if (!pairs || pairs.length === 0) {
+        console.warn('⚠️ No DexScreener pairs found for token');
+        return { price: 0, marketCap: 0 };
+      }
+
+      // Sort by liquidity and take the most liquid pair
+      const mainPair = pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+
+      console.log(`💰 DexScreener price: $${mainPair.priceUsd}, Market Cap: $${mainPair.marketCap}`);
+
+      return {
+        price: parseFloat(mainPair.priceUsd) || 0,
+        marketCap: mainPair.marketCap || 0
+      };
+    } catch (error) {
+      console.error('❌ Error fetching DexScreener data:', error);
+      return { price: 0, marketCap: 0 };
+    }
+  }
+
 
 
   // Create the daily report embed
@@ -239,25 +275,30 @@ class DailyMessage {
     }
 
     // Hbar.ħ Token Stats Section
-    // Calculate market cap: total supply × HBAR price (since HBAR.ℏ is 1:1 with HBAR)
-    const hbarHPrice = hbarData.price || 0;
-    const hbarHMarketCap = tokenData.supply * hbarHPrice;
+    // Use real price and market cap from DexScreener
+    const hbarHPrice = tokenData.price || 0;
+    const hbarHMarketCap = tokenData.marketCap || 0;
+
+    // Format market cap
     const hbarHMarketCapFormatted = hbarHMarketCap > 0 ?
       (hbarHMarketCap >= 1000000 ? `$${(hbarHMarketCap / 1000000).toFixed(2)}M` : `$${hbarHMarketCap.toLocaleString()}`) :
       'N/A';
+
+    // Format price
+    const hbarHPriceFormatted = hbarHPrice > 0 ? `$${hbarHPrice.toFixed(4)}` : 'N/A';
 
     embed.addFields({
       name: '🎯 Hbar.ħ Stats',
       value:
         `**Total Supply:** ${tokenData.supply.toLocaleString()} ${tokenData.symbol || 'tokens'}\n` +
         `**Unique Holders:** ${tokenData.holders.toLocaleString()}\n` +
-        `**Price:** $${hbarHPrice.toFixed(4)} (1:1 with HBAR)\n` +
+        `**Price:** ${hbarHPriceFormatted}\n` +
         `**Market Cap:** ${hbarHMarketCapFormatted}`,
       inline: false
     });
 
     embed.setFooter({
-      text: `${today} • Data from Hedera Mirror Node & CoinGecko`
+      text: `${today} • Data from Hedera Mirror Node, CoinGecko & DexScreener`
     });
 
     return embed;
