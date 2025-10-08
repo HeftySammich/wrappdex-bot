@@ -285,8 +285,23 @@ class DailyMessage {
       (hbarHMarketCap >= 1000000 ? `$${(hbarHMarketCap / 1000000).toFixed(2)}M` : `$${hbarHMarketCap.toLocaleString()}`) :
       'N/A';
 
-    // Format price
-    const hbarHPriceFormatted = hbarHPrice > 0 ? `$${hbarHPrice.toFixed(4)}` : 'N/A';
+    // Format price with smart decimals for small values
+    let hbarHPriceFormatted = 'N/A';
+    if (hbarHPrice > 0) {
+      if (hbarHPrice >= 1) {
+        // Price >= $1: Show 2 decimals (e.g., $1.23)
+        hbarHPriceFormatted = `$${hbarHPrice.toFixed(2)}`;
+      } else if (hbarHPrice >= 0.01) {
+        // Price >= $0.01: Show 4 decimals (e.g., $0.0523)
+        hbarHPriceFormatted = `$${hbarHPrice.toFixed(4)}`;
+      } else if (hbarHPrice >= 0.0001) {
+        // Price >= $0.0001: Show 6 decimals (e.g., $0.000869)
+        hbarHPriceFormatted = `$${hbarHPrice.toFixed(6)}`;
+      } else {
+        // Very small price: Show 8 decimals (e.g., $0.00000870)
+        hbarHPriceFormatted = `$${hbarHPrice.toFixed(8)}`;
+      }
+    }
 
     embed.addFields({
       name: '🎯 Hbar.ħ Stats',
