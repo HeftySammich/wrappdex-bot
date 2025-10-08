@@ -239,13 +239,20 @@ class DailyMessage {
     }
 
     // Hbar.ħ Token Stats Section
+    // Calculate market cap: total supply × HBAR price (since HBAR.ℏ is 1:1 with HBAR)
+    const hbarHPrice = hbarData.price || 0;
+    const hbarHMarketCap = tokenData.supply * hbarHPrice;
+    const hbarHMarketCapFormatted = hbarHMarketCap > 0 ?
+      (hbarHMarketCap >= 1000000 ? `$${(hbarHMarketCap / 1000000).toFixed(2)}M` : `$${hbarHMarketCap.toLocaleString()}`) :
+      'N/A';
+
     embed.addFields({
       name: '🎯 Hbar.ħ Stats',
       value:
         `**Total Supply:** ${tokenData.supply.toLocaleString()} ${tokenData.symbol || 'tokens'}\n` +
         `**Unique Holders:** ${tokenData.holders.toLocaleString()}\n` +
-        `**Token Name:** ${tokenData.name || 'Hbar.ħ'}\n` +
-        `**Decimals:** ${tokenData.decimals}`,
+        `**Price:** $${hbarHPrice.toFixed(4)} (1:1 with HBAR)\n` +
+        `**Market Cap:** ${hbarHMarketCapFormatted}`,
       inline: false
     });
 
