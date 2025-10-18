@@ -11,8 +11,14 @@ async function initializeRulesTable() {
           value VARCHAR(255) NOT NULL,
           role_id VARCHAR(255) NOT NULL,
           guild_id VARCHAR(255) NOT NULL,
+          token_type VARCHAR(50) DEFAULT 'hts',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+      `);
+
+      // Add token_type column if it doesn't exist (for existing databases)
+      await db.query(`
+        ALTER TABLE rules ADD COLUMN IF NOT EXISTS token_type VARCHAR(50) DEFAULT 'hts'
       `);
 
       // PostgreSQL - Verified users table
@@ -68,11 +74,27 @@ async function initializeRulesTable() {
             type TEXT NOT NULL,
             value TEXT NOT NULL,
             role_id TEXT NOT NULL,
-            guild_id TEXT NOT NULL
+            guild_id TEXT NOT NULL,
+            token_type TEXT DEFAULT 'hts'
           )
         `, (err) => {
           if (err) reject(err);
           else resolve();
+        });
+      });
+
+      // Add token_type column if it doesn't exist (for existing databases)
+      await new Promise((resolve, reject) => {
+        db.run(`
+          ALTER TABLE rules ADD COLUMN token_type TEXT DEFAULT 'hts'
+        `, (err) => {
+          if (err && err.message.includes('duplicate column')) {
+            resolve(); // Column already exists
+          } else if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
         });
       });
 
@@ -142,20 +164,20 @@ async function initializeRulesTable() {
   }
 }
 
-async function addRule(type, value, roleId, guildId) {
+async function addRule(type, value, roleId, guildId, tokenType = 'hts') {
   try {
     if (isProduction) {
       // PostgreSQL
       const result = await db.query(
-        'INSERT INTO rules (type, value, role_id, guild_id) VALUES ($1, $2, $3, $4) RETURNING id',
-        [type, value, roleId, guildId]
+        'INSERT INTO rules (type, value, role_id, guild_id, token_type) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+        [type, value, roleId, guildId, tokenType]
       );
       return { changes: 1, lastInsertRowid: result.rows[0].id };
     } else {
       // SQLite
       return new Promise((resolve, reject) => {
-        db.run('INSERT INTO rules (type, value, role_id, guild_id) VALUES (?, ?, ?, ?)',
-          [type, value, roleId, guildId],
+        db.run('INSERT INTO rules (type, value, role_id, guild_id, token_type) VALUES (?, ?, ?, ?, ?)',
+          [type, value, roleId, guildId, tokenType],
           function(err) {
             if (err) reject(err);
             else resolve({ changes: this.changes, lastInsertRowid: this.lastID });

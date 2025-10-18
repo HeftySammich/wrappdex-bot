@@ -21,6 +21,8 @@ async function getNFTData(accountId) {
     console.log(`🎯 Token IDs: ${TOKEN_IDS.join(', ')}`);
 
     let totalQuantity = 0;
+    let htsQuantity = 0;
+    let nftQuantity = 0;
     let allSerials = [];
 
     // Query each token ID and combine results
@@ -47,7 +49,9 @@ async function getNFTData(accountId) {
             console.log(`📊 Token ${tokenId}: Balance = ${actualBalance} tokens (raw: ${balance}, decimals: ${decimals})`);
 
             // For fungible tokens, we use the whole token balance as quantity
-            totalQuantity += Math.floor(actualBalance);
+            const htsAmount = Math.floor(actualBalance);
+            htsQuantity += htsAmount;
+            totalQuantity += htsAmount;
           } else {
             console.log(`📊 Token ${tokenId}: No balance found`);
           }
@@ -62,6 +66,7 @@ async function getNFTData(accountId) {
 
           console.log(`📊 Token ${tokenId}: ${nfts.length} NFTs found`);
 
+          nftQuantity += nfts.length;
           totalQuantity += nfts.length;
           allSerials = allSerials.concat(nfts.map(nft => nft.serial_number));
         } else {
@@ -74,17 +79,19 @@ async function getNFTData(accountId) {
       }
     }
 
-    console.log(`📈 Combined results: ${totalQuantity} total tokens/NFTs`);
+    console.log(`📈 Combined results: ${totalQuantity} total (HTS: ${htsQuantity}, NFT: ${nftQuantity})`);
 
     return {
       ownsToken: totalQuantity > 0,
       quantity: totalQuantity,
+      htsQuantity: htsQuantity,
+      nftQuantity: nftQuantity,
       serials: allSerials
     };
   } catch (error) {
     console.error('❌ Hedera API error:', error.message);
     console.error('❌ Full error:', error);
-    return { ownsToken: false, quantity: 0, serials: [] };
+    return { ownsToken: false, quantity: 0, htsQuantity: 0, nftQuantity: 0, serials: [] };
   }
 }
 
