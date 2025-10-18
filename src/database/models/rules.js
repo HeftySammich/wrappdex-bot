@@ -267,6 +267,26 @@ async function getAllVerifiedUsers() {
   }
 }
 
+async function deleteVerifiedUsersByUserId(userId, guildId) {
+  try {
+    if (isProduction) {
+      // PostgreSQL
+      await db.query('DELETE FROM verified_users WHERE user_id = $1 AND guild_id = $2', [userId, guildId]);
+    } else {
+      // SQLite
+      await new Promise((resolve, reject) => {
+        db.run('DELETE FROM verified_users WHERE user_id = ? AND guild_id = ?', [userId, guildId], (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+  } catch (error) {
+    console.error('Error deleting verified users:', error);
+    throw error;
+  }
+}
+
 // Initialize tables on module load
 initializeRulesTable().catch(console.error);
 
@@ -506,6 +526,7 @@ module.exports = {
   getRulesByGuild,
   addVerifiedUser,
   getAllVerifiedUsers,
+  deleteVerifiedUsersByUserId,
   addGiveawayEntry,
   getGiveawayEntries,
   getUserGiveawayEntry,

@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const { getNFTData } = require('../../services/hederaService');
 const { assignRolesBasedOnNFT } = require('../../services/roleAssignment');
 const { assignRole } = require('../../services/discordService');
-const { addVerifiedUser } = require('../../database/models/rules');
+const { addVerifiedUser, getAllVerifiedUsers } = require('../../database/models/rules');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,7 +18,20 @@ module.exports = {
     const accountId = interaction.options.getString('accountid');
 
     try {
-      console.log(`🔍 Verifying wallet: ${accountId}`);
+      // Check if user already has a verified wallet
+      const verifiedUsers = await getAllVerifiedUsers();
+      const userVerifications = verifiedUsers.filter(user =>
+        user.user_id === interaction.user.id && user.guild_id === interaction.guildId
+      );
+
+      if (userVerifications.length > 0) {
+        await interaction.editReply({
+          content: 'You already have a wallet verified. Use `/reset-wallet` to change it.'
+        });
+        return;
+      }
+
+      console.log(`Verifying wallet: ${accountId}`);
       const nftData = await getNFTData(accountId);
       console.log(`📊 NFT Data:`, nftData);
 
