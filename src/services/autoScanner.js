@@ -97,7 +97,7 @@ class AutoScanner {
     // Get current roles that should be assigned
     const newRoles = await assignRolesBasedOnNFT(currentNFTData, guild_id);
     const oldRoles = await assignRolesBasedOnNFT(
-      { quantity: last_nft_count, serials: previousSerials, ownsToken: last_nft_count > 0 }, 
+      { quantity: last_nft_count, serials: previousSerials, ownsToken: last_nft_count > 0 },
       guild_id
     );
 

@@ -89,7 +89,6 @@ client.once('ready', async () => {
   // Start automatic scanner
   const scanner = new AutoScanner(client);
   scanner.start();
-  client.autoScanner = scanner; // Make accessible to commands
 
   // Start Hedera Mirror sales monitor
   const salesMonitor = new HederaMirrorMonitor(client);
