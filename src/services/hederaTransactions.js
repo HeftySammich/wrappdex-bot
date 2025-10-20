@@ -101,7 +101,7 @@ async function checkAssociation(walletId) {
   }
 }
 
-// Get wallet balance
+// Get wallet balance - specifically for faucet token (hbar.h)
 async function getBalance(walletId) {
   if (!isHederaInitialized) {
     return '❌ Faucet service not configured. Please contact administrator.';
@@ -114,23 +114,21 @@ async function getBalance(walletId) {
 
     const hbarBalance = result.hbars.toBigNumber().toFixed(2);
 
-    const { TOKEN_IDS } = require('../utils/constants');
-    let totalNFTs = 0;
-    let tokenBalances = [];
+    // Get faucet token balance (hbar.h - 0.0.9356476)
+    const FAUCET_TOKEN_ID = process.env.FAUCET_TOKEN_ID || '0.0.9356476';
+    let faucetTokenBalance = 0;
 
-    TOKEN_IDS.forEach(tokenId => {
-      const nftBalance = result.tokens.get(tokenId);
-      const nftAmount = nftBalance ? parseInt(nftBalance.toBigNumber().toString()) : 0;
-      totalNFTs += nftAmount;
-      if (nftAmount > 0) {
-        tokenBalances.push(`${tokenId}: ${nftAmount}`);
+    try {
+      const tokenBalance = result.tokens.get(FAUCET_TOKEN_ID);
+      if (tokenBalance) {
+        // hbar.h has 8 decimals, so divide by 10^8
+        faucetTokenBalance = (BigInt(tokenBalance.toString()) / BigInt(100000000)).toString();
       }
-    });
+    } catch (tokenErr) {
+      console.log(`⚠️ Could not get faucet token balance: ${tokenErr.message}`);
+    }
 
-    const balanceDetails = tokenBalances.length > 0 ?
-      `\n🔹 **Token Details:** ${tokenBalances.join(', ')}` : '';
-
-    return `💰 **Wallet Balance for \`${walletId}\`:**\n🔹 **HBAR:** ${hbarBalance}\n🎯 **Total NFTs:** ${totalNFTs}${balanceDetails}`;
+    return `💰 **Faucet Wallet Balance:**\n🔹 **HBAR:** ${hbarBalance}\n🎯 **hbar.h Tokens:** ${faucetTokenBalance}\n\n📍 **Wallet:** \`${walletId}\``;
 
   } catch (err) {
     console.error('❌ Balance check error:', err);

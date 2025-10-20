@@ -24,17 +24,22 @@ module.exports = {
       const balanceInfo = await getBalance(walletId);
 
       const embed = new EmbedBuilder()
-        .setColor('#0099ff')
-        .setTitle('💰 Faucet Wallet Balance')
+        .setColor('#00A1D6')
+        .setTitle('💰 Faucet Wallet Balance Check')
         .setDescription(balanceInfo)
         .addFields(
           {
-            name: '🔐 Wallet Address',
-            value: `\`${walletId}\``,
+            name: '📝 What This Shows',
+            value: '**HBAR:** Native Hedera balance\n**hbar.h Tokens:** Fungible tokens available for distribution to Snobble members',
+            inline: false
+          },
+          {
+            name: '⚠️ Important',
+            value: 'Only Snobble role holders (who own SNOBBLE NFTs) can claim hbar.h tokens from the faucet.',
             inline: false
           }
         )
-        .setFooter({ text: 'Check this regularly to ensure sufficient funds' });
+        .setFooter({ text: 'Check this regularly to ensure sufficient hbar.h tokens for claims' });
 
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {
