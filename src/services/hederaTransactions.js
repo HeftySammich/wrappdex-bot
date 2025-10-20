@@ -27,26 +27,17 @@ function initializeHedera() {
     let keyType = null;
     let privateKeyString = process.env.FAUCET_PRIVATE_KEY;
 
-    // Check if it's a raw 64-character hex key (32 bytes) - needs DER conversion
-    if (privateKeyString.length === 64 && /^[0-9a-fA-F]+$/.test(privateKeyString)) {
-      console.log('🔄 Detected raw ED25519 key (64 hex chars) - converting to DER format...');
-      // Convert raw ED25519 key to proper DER format
-      // Correct DER format for ED25519 private key:
-      // 302e = SEQUENCE of 46 bytes
-      // 020100 = INTEGER 0
-      // 300506032b6570 = SEQUENCE { OBJECT IDENTIFIER id-Ed25519 }
-      // 0420 = OCTET STRING of 32 bytes
-      // + 32-byte key
-      const derPrefix = '302e020100300506032b65700420';
-      privateKeyString = derPrefix + privateKeyString;
-      console.log(`✅ Converted to DER format: ${privateKeyString.substring(0, 30)}...`);
-    }
+    console.log(`🔐 Private key format check:`);
+    console.log(`   - Length: ${privateKeyString.length} characters`);
+    console.log(`   - Is hex: ${/^[0-9a-fA-F]+$/.test(privateKeyString)}`);
+    console.log(`   - Starts with: ${privateKeyString.substring(0, 20)}...`);
 
-    // Try ED25519 first (since we know it's ED25519)
+    // According to Hedera SDK docs, fromStringED25519 accepts raw hex-encoded strings
+    // No DER conversion needed - the SDK handles both DER and raw formats
     try {
       operatorKey = PrivateKey.fromStringED25519(privateKeyString);
       keyType = 'ED25519';
-      console.log('✅ Successfully loaded ED25519 private key');
+      console.log('✅ Successfully loaded ED25519 private key from raw hex');
     } catch (ed25519Error) {
       console.log(`⚠️ ED25519 failed: ${ed25519Error.message}`);
       // Try ECDSA as fallback
