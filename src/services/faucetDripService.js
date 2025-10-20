@@ -1,5 +1,6 @@
 const { getOrCreateFaucetClaim, updateLastClaim, getFaucetConfig } = require('../database/models/faucet');
 const { getNFTData } = require('./hederaService');
+const { transferToken } = require('./hederaTransactions');
 
 class FaucetDripService {
   constructor(client) {
@@ -164,7 +165,7 @@ class FaucetDripService {
   async processClaim(userId, guildId, walletAddress, config) {
     try {
       const claimCheck = await this.canClaim(userId, guildId, walletAddress);
-      
+
       if (!claimCheck.canClaim) {
         return {
           success: false,
@@ -172,17 +173,36 @@ class FaucetDripService {
         };
       }
 
-      // Update claim record
+      // Transfer tokens to user's wallet
+      const transferResult = await transferToken(
+        walletAddress,
+        config.token_id,
+        config.amount_per_claim,
+        8 // hbar.h has 8 decimals
+      );
+
+      if (!transferResult.success) {
+        return {
+          success: false,
+          message: `❌ Token transfer failed: ${transferResult.error}`
+        };
+      }
+
+      // Update claim record only after successful transfer
       await updateLastClaim(userId, guildId, config.amount_per_claim);
 
       return {
         success: true,
         amount: config.amount_per_claim,
-        message: `✅ Claimed **${config.amount_per_claim} hbar.h**! Next claim available tomorrow at midnight EST.`
+        transactionId: transferResult.transactionId,
+        message: `✅ Claimed **${config.amount_per_claim} hbar.h**! Next claim available tomorrow at midnight EST.\n📝 Transaction: \`${transferResult.transactionId}\``
       };
     } catch (error) {
       console.error('❌ Error processing claim:', error);
-      throw error;
+      return {
+        success: false,
+        message: `❌ Error processing claim: ${error.message}`
+      };
     }
   }
 }

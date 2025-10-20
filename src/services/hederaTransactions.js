@@ -299,10 +299,68 @@ async function getAvailableNFTs() {
   }
 }
 
+// Transfer fungible tokens (like hbar.h) to a wallet
+async function transferToken(recipientWalletId, tokenId, amount, decimals = 8) {
+  if (!isHederaInitialized) {
+    return {
+      success: false,
+      error: 'Faucet service not configured',
+      message: '❌ Faucet service not configured. Please contact administrator.'
+    };
+  }
+
+  try {
+    const walletStr = String(recipientWalletId);
+
+    if (!walletStr.startsWith('0.0.')) {
+      throw new Error('Invalid wallet format. Expected 0.0.xxxx');
+    }
+
+    if (!tokenId.startsWith('0.0.')) {
+      throw new Error('Invalid token ID format. Expected 0.0.xxxx');
+    }
+
+    // Convert amount to smallest unit (considering decimals)
+    const amountInSmallestUnit = BigInt(amount) * BigInt(Math.pow(10, decimals));
+
+    console.log(`💰 Transferring ${amount} tokens (${tokenId}) to ${walletStr}`);
+
+    const token = TokenId.fromString(tokenId);
+    const recipientId = AccountId.fromString(walletStr);
+
+    const tx = await new TransferTransaction()
+      .addTokenTransfer(token, operatorId, -amountInSmallestUnit)
+      .addTokenTransfer(token, recipientId, amountInSmallestUnit)
+      .freezeWith(client)
+      .sign(operatorKey);
+
+    const result = await retryHederaOperation(() => tx.execute(client));
+
+    console.log(`✅ Token transfer successful! Transaction ID: ${result.transactionId}`);
+    return {
+      success: true,
+      amount: amount,
+      tokenId: tokenId,
+      recipientWallet: walletStr,
+      transactionId: result.transactionId.toString(),
+      message: `✅ Successfully sent ${amount} tokens (${tokenId}) to ${walletStr}`
+    };
+
+  } catch (err) {
+    console.error('❌ Token transfer failed:', err);
+    return {
+      success: false,
+      error: err.message,
+      message: `❌ Token transfer failed: ${err.message}`
+    };
+  }
+}
+
 module.exports = {
   checkAssociation,
   getBalance,
   transferNFT,
+  transferToken,
   getAvailableNFTs,
   retryHederaOperation,
   isHederaInitialized,
