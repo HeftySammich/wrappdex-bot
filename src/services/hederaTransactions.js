@@ -30,9 +30,14 @@ function initializeHedera() {
     // Check if it's a raw 64-character hex key (32 bytes) - needs DER conversion
     if (privateKeyString.length === 64 && /^[0-9a-fA-F]+$/.test(privateKeyString)) {
       console.log('🔄 Detected raw ED25519 key (64 hex chars) - converting to DER format...');
-      // Convert raw ED25519 key to DER format
-      // DER format for ED25519: 302e020100300506032b6570 + 32-byte key
-      const derPrefix = '302e020100300506032b6570';
+      // Convert raw ED25519 key to proper DER format
+      // Correct DER format for ED25519 private key:
+      // 302e = SEQUENCE of 46 bytes
+      // 020100 = INTEGER 0
+      // 300506032b6570 = SEQUENCE { OBJECT IDENTIFIER id-Ed25519 }
+      // 0420 = OCTET STRING of 32 bytes
+      // + 32-byte key
+      const derPrefix = '302e020100300506032b65700420';
       privateKeyString = derPrefix + privateKeyString;
       console.log(`✅ Converted to DER format: ${privateKeyString.substring(0, 30)}...`);
     }
