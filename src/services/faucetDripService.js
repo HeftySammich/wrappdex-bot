@@ -57,7 +57,12 @@ class FaucetDripService {
         return { canClaim: true };
       }
 
-      const lastClaimDate = new Date(claim.last_claim_timestamp);
+      // Convert timestamp to number (PostgreSQL may return it as string)
+      const timestampMs = typeof claim.last_claim_timestamp === 'string'
+        ? parseInt(claim.last_claim_timestamp, 10)
+        : claim.last_claim_timestamp;
+
+      const lastClaimDate = new Date(timestampMs);
       const lastClaimEstDate = new Date(lastClaimDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
       lastClaimEstDate.setHours(0, 0, 0, 0);
       const lastClaimDateMs = lastClaimEstDate.getTime();
@@ -146,10 +151,15 @@ class FaucetDripService {
       let canClaimToday = true;
 
       if (claim.last_claim_timestamp) {
-        const lastClaimDate = new Date(claim.last_claim_timestamp);
+        // Convert timestamp to number (PostgreSQL may return it as string)
+        const timestampMs = typeof claim.last_claim_timestamp === 'string'
+          ? parseInt(claim.last_claim_timestamp, 10)
+          : claim.last_claim_timestamp;
+
+        const lastClaimDate = new Date(timestampMs);
         const lastClaimEstDate = new Date(lastClaimDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
         lastClaimEstDate.setHours(0, 0, 0, 0);
-        
+
         const todayStart = new Date(estNow);
         todayStart.setHours(0, 0, 0, 0);
 
