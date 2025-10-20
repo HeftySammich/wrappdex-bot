@@ -20,14 +20,39 @@ function initializeHedera() {
 
   try {
     operatorId = AccountId.fromString(process.env.FAUCET_ACCOUNT_ID);
+    console.log(`🔐 Account ID: ${process.env.FAUCET_ACCOUNT_ID}`);
+    console.log(`🔐 Private key length: ${process.env.FAUCET_PRIVATE_KEY.length} characters`);
+    console.log(`🔐 Private key starts with: ${process.env.FAUCET_PRIVATE_KEY.substring(0, 20)}...`);
 
-    // Try ECDSA first, then ED25519 as fallback
+    let keyType = null;
+    let privateKeyString = process.env.FAUCET_PRIVATE_KEY;
+
+    // Check if it's a raw 64-character hex key (32 bytes) - needs DER conversion
+    if (privateKeyString.length === 64 && /^[0-9a-fA-F]+$/.test(privateKeyString)) {
+      console.log('🔄 Detected raw ED25519 key (64 hex chars) - converting to DER format...');
+      // Convert raw ED25519 key to DER format
+      // DER format for ED25519: 302e020100300506032b6570 + 32-byte key
+      const derPrefix = '302e020100300506032b6570';
+      privateKeyString = derPrefix + privateKeyString;
+      console.log(`✅ Converted to DER format: ${privateKeyString.substring(0, 30)}...`);
+    }
+
+    // Try ED25519 first (since we know it's ED25519)
     try {
-      operatorKey = PrivateKey.fromStringECDSA(process.env.FAUCET_PRIVATE_KEY);
-      console.log('🔑 Using ECDSA private key');
-    } catch (ecdsaError) {
-      operatorKey = PrivateKey.fromStringED25519(process.env.FAUCET_PRIVATE_KEY);
-      console.log('🔑 Using ED25519 private key');
+      operatorKey = PrivateKey.fromStringED25519(privateKeyString);
+      keyType = 'ED25519';
+      console.log('✅ Successfully loaded ED25519 private key');
+    } catch (ed25519Error) {
+      console.log(`⚠️ ED25519 failed: ${ed25519Error.message}`);
+      // Try ECDSA as fallback
+      try {
+        operatorKey = PrivateKey.fromStringECDSA(privateKeyString);
+        keyType = 'ECDSA';
+        console.log('✅ Successfully loaded ECDSA private key');
+      } catch (ecdsaError) {
+        console.log(`⚠️ ECDSA failed: ${ecdsaError.message}`);
+        throw new Error(`Could not parse private key as ED25519 or ECDSA: ${ed25519Error.message}`);
+      }
     }
 
     const { TOKEN_IDS } = require('../utils/constants');
@@ -35,10 +60,12 @@ function initializeHedera() {
     client = Client.forMainnet().setOperator(operatorId, operatorKey);
 
     console.log(`✅ Hedera faucet initialized with account: ${process.env.FAUCET_ACCOUNT_ID}`);
+    console.log(`🔑 Using ${keyType} private key`);
     console.log(`🎯 Supporting token IDs: ${TOKEN_IDS.join(', ')}`);
     return true;
   } catch (error) {
     console.error('❌ Failed to initialize Hedera faucet:', error.message);
+    console.error('❌ Stack:', error.stack);
     return false;
   }
 }
