@@ -3,6 +3,8 @@ const AutoScanner = require('./services/autoScanner');
 const HederaMirrorMonitor = require('./services/hederaMirrorMonitor');
 const DailyMessage = require('./services/dailyMessage');
 const FaucetService = require('./services/faucetService');
+const FaucetDripService = require('./services/faucetDripService');
+const { initializeFaucetTables } = require('./database/models/faucet');
 const fs = require('fs');
 const path = require('path');
 // Only load dotenv in development
@@ -81,6 +83,14 @@ async function deployCommands() {
 client.once('ready', async () => {
   console.log(`✅ Bot successfully logged in as ${client.user.tag}`);
 
+  // Initialize faucet tables
+  try {
+    await initializeFaucetTables();
+    console.log('✅ Faucet tables initialized');
+  } catch (error) {
+    console.error('❌ Error initializing faucet tables:', error);
+  }
+
   // Deploy commands automatically on startup
   await deployCommands();
 
@@ -102,6 +112,10 @@ client.once('ready', async () => {
   // Start faucet service
   const faucetService = new FaucetService(client);
   client.faucetService = faucetService; // Make accessible to commands
+
+  // Initialize faucet drip service
+  const faucetDripService = new FaucetDripService(client);
+  client.faucetDripService = faucetDripService; // Make accessible to commands
 });
 
 // Welcome message when new members join
