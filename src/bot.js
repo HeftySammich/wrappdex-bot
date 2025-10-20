@@ -38,12 +38,14 @@ async function deployCommands() {
 
     for (const folder of commandFolders) {
       const commandFiles = fs.readdirSync(`./src/commands/${folder}`).filter(file => file.endsWith('.js'));
+      console.log(`📂 Found ${commandFiles.length} commands in ${folder}: ${commandFiles.join(', ')}`);
       for (const file of commandFiles) {
         const command = require(`./commands/${folder}/${file}`);
         commands.push(command.data.toJSON());
       }
     }
 
+    console.log(`📋 Total commands to deploy: ${commands.length}`);
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
     // Clear global commands if deploying to guild (prevents duplicates)
@@ -149,17 +151,23 @@ const commands = new Map();
 
 // Load public commands
 const publicCommandFiles = fs.readdirSync('./src/commands/public').filter(file => file.endsWith('.js'));
+console.log(`📂 Loading ${publicCommandFiles.length} public commands: ${publicCommandFiles.join(', ')}`);
 for (const file of publicCommandFiles) {
   const command = require(`./commands/public/${file}`);
   commands.set(command.data.name, command);
+  console.log(`✅ Loaded command: ${command.data.name}`);
 }
 
 // Load admin commands
 const adminCommandFiles = fs.readdirSync('./src/commands/admin').filter(file => file.endsWith('.js'));
+console.log(`📂 Loading ${adminCommandFiles.length} admin commands: ${adminCommandFiles.join(', ')}`);
 for (const file of adminCommandFiles) {
   const command = require(`./commands/admin/${file}`);
   commands.set(command.data.name, command);
+  console.log(`✅ Loaded command: ${command.data.name}`);
 }
+
+console.log(`📋 Total commands loaded: ${commands.size}`);
 
 // Handle embed modal submissions
 async function handleEmbedModal(interaction) {
