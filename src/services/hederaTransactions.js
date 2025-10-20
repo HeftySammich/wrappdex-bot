@@ -319,9 +319,11 @@ async function transferToken(recipientWalletId, tokenId, amount, decimals = 8) {
     }
 
     // Convert amount to smallest unit (considering decimals)
-    const amountInSmallestUnit = BigInt(amount) * BigInt(Math.pow(10, decimals));
+    // Use string to avoid BigInt conversion issues with Hedera SDK
+    const amountInSmallestUnit = (BigInt(amount) * BigInt(Math.pow(10, decimals))).toString();
 
     console.log(`💰 Transferring ${amount} tokens (${tokenId}) to ${walletStr}`);
+    console.log(`📊 Amount in smallest unit: ${amountInSmallestUnit}`);
 
     const token = TokenId.fromString(tokenId);
     const recipientId = AccountId.fromString(walletStr);
