@@ -171,16 +171,38 @@ async function getRandomNFTSerial() {
 
     let allNFTs = [];
 
-    // Query all supported tokens and combine NFTs
+    // Query all supported tokens and combine NFTs with pagination
     for (const tokenId of TOKEN_IDS) {
       try {
-        const response = await axios.get(
-          `${HEDERA_MIRROR_NODE_URL}/api/v1/accounts/${operatorId}/nfts?token.id=${tokenId}`
-        );
-        const nfts = response.data.nfts || [];
+        let tokenNFTs = [];
+        let nextLink = `${HEDERA_MIRROR_NODE_URL}/api/v1/accounts/${operatorId}/nfts?token.id=${tokenId}&limit=100&order=asc`;
+
+        // Paginate through all NFT results for this token
+        while (nextLink) {
+          try {
+            const response = await axios.get(nextLink);
+            const nfts = response.data.nfts || [];
+            tokenNFTs = tokenNFTs.concat(nfts);
+
+            // Check if there's a next page
+            nextLink = response.data.links && response.data.links.next
+              ? `${HEDERA_MIRROR_NODE_URL}${response.data.links.next}`
+              : null;
+
+            if (nextLink) {
+              // Small delay to avoid overwhelming the API
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          } catch (paginationError) {
+            console.error(`❌ Error during NFT pagination for token ${tokenId}:`, paginationError.message);
+            break;
+          }
+        }
+
         // Add token ID to each NFT for later reference
-        const nftsWithToken = nfts.map(nft => ({ ...nft, token_id: tokenId }));
+        const nftsWithToken = tokenNFTs.map(nft => ({ ...nft, token_id: tokenId }));
         allNFTs = allNFTs.concat(nftsWithToken);
+        console.log(`🎯 Faucet wallet has ${tokenNFTs.length} NFTs for token ${tokenId}`);
       } catch (tokenError) {
         console.error(`❌ Error querying faucet NFTs for token ${tokenId}:`, tokenError.message);
       }
@@ -283,19 +305,38 @@ async function getAvailableNFTs() {
     let totalNFTs = 0;
     const tokenCounts = {};
 
-    // Check each supported token
+    // Check each supported token with pagination
     for (const tokenId of TOKEN_IDS) {
       try {
-        const response = await axios.get(
-          `${HEDERA_MIRROR_NODE_URL}/api/v1/accounts/${operatorId}/nfts?token.id=${tokenId}`
-        );
-        const nfts = response.data.nfts || [];
-        const count = nfts.length;
+        let tokenNFTCount = 0;
+        let nextLink = `${HEDERA_MIRROR_NODE_URL}/api/v1/accounts/${operatorId}/nfts?token.id=${tokenId}&limit=100&order=asc`;
 
-        tokenCounts[tokenId] = count;
-        totalNFTs += count;
+        // Paginate through all NFT results for this token
+        while (nextLink) {
+          try {
+            const response = await axios.get(nextLink);
+            const nfts = response.data.nfts || [];
+            tokenNFTCount += nfts.length;
 
-        console.log(`🎯 Faucet wallet has ${count} NFTs for token ${tokenId}`);
+            // Check if there's a next page
+            nextLink = response.data.links && response.data.links.next
+              ? `${HEDERA_MIRROR_NODE_URL}${response.data.links.next}`
+              : null;
+
+            if (nextLink) {
+              // Small delay to avoid overwhelming the API
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          } catch (paginationError) {
+            console.error(`❌ Error during NFT pagination for token ${tokenId}:`, paginationError.message);
+            break;
+          }
+        }
+
+        tokenCounts[tokenId] = tokenNFTCount;
+        totalNFTs += tokenNFTCount;
+
+        console.log(`🎯 Faucet wallet has ${tokenNFTCount} NFTs for token ${tokenId}`);
       } catch (tokenError) {
         console.error(`❌ Error checking NFTs for token ${tokenId}:`, tokenError.message);
         tokenCounts[tokenId] = 0;

@@ -57,18 +57,40 @@ async function getNFTData(accountId) {
           }
 
         } else if (tokenType === 'NON_FUNGIBLE_UNIQUE') {
-          // Query NFT holdings
-          const url = `${HEDERA_MIRROR_NODE_URL}/api/v1/accounts/${accountId}/nfts?token.id=${tokenId}`;
-          console.log(`🔍 Querying NFTs: ${url}`);
+          // Query NFT holdings with pagination
+          let allTokenNFTs = [];
+          let nextLink = `${HEDERA_MIRROR_NODE_URL}/api/v1/accounts/${accountId}/nfts?token.id=${tokenId}&limit=100&order=asc`;
 
-          const response = await axios.get(url, { timeout: 10000 }); // 10 second timeout
-          const nfts = response.data.nfts || [];
+          console.log(`🔍 Querying NFTs: ${nextLink}`);
 
-          console.log(`📊 Token ${tokenId}: ${nfts.length} NFTs found`);
+          // Paginate through all NFT results
+          while (nextLink) {
+            try {
+              const response = await axios.get(nextLink, { timeout: 10000 });
+              const nfts = response.data.nfts || [];
+              allTokenNFTs = allTokenNFTs.concat(nfts);
 
-          nftQuantity += nfts.length;
-          totalQuantity += nfts.length;
-          allSerials = allSerials.concat(nfts.map(nft => nft.serial_number));
+              // Check if there's a next page
+              nextLink = response.data.links && response.data.links.next
+                ? `${HEDERA_MIRROR_NODE_URL}${response.data.links.next}`
+                : null;
+
+              if (nextLink) {
+                console.log(`📄 Token ${tokenId}: Fetched ${allTokenNFTs.length} NFTs so far...`);
+                // Small delay to avoid overwhelming the API
+                await new Promise(resolve => setTimeout(resolve, 100));
+              }
+            } catch (paginationError) {
+              console.error(`❌ Error during NFT pagination for ${tokenId}:`, paginationError.message);
+              break;
+            }
+          }
+
+          console.log(`📊 Token ${tokenId}: ${allTokenNFTs.length} NFTs found (total)`);
+
+          nftQuantity += allTokenNFTs.length;
+          totalQuantity += allTokenNFTs.length;
+          allSerials = allSerials.concat(allTokenNFTs.map(nft => nft.serial_number));
         } else {
           console.log(`⚠️ Unknown token type for ${tokenId}: ${tokenType}`);
         }
