@@ -31,7 +31,11 @@ class FaucetDripService {
   async canClaim(userId, guildId, walletAddress) {
     try {
       const claim = await getOrCreateFaucetClaim(userId, guildId, walletAddress);
-      
+
+      console.log(`🔍 Claim check for user ${userId}:`);
+      console.log(`   - Faucet active: ${claim.is_faucet_active}`);
+      console.log(`   - Last claim timestamp: ${claim.last_claim_timestamp}`);
+
       if (!claim.is_faucet_active) {
         return {
           canClaim: false,
@@ -44,8 +48,12 @@ class FaucetDripService {
       todayStart.setHours(0, 0, 0, 0);
       const todayStartMs = todayStart.getTime();
 
+      console.log(`   - EST now: ${estNow.toLocaleString('en-US', { timeZone: 'America/New_York' })}`);
+      console.log(`   - Today start (EST): ${todayStart.toLocaleString('en-US', { timeZone: 'America/New_York' })}`);
+
       // If no last claim, they can claim
       if (!claim.last_claim_timestamp) {
+        console.log(`   ✅ No previous claim - user can claim`);
         return { canClaim: true };
       }
 
@@ -54,6 +62,12 @@ class FaucetDripService {
       lastClaimEstDate.setHours(0, 0, 0, 0);
       const lastClaimDateMs = lastClaimEstDate.getTime();
 
+      console.log(`   - Last claim date (raw): ${lastClaimDate}`);
+      console.log(`   - Last claim date (EST): ${lastClaimEstDate.toLocaleString('en-US', { timeZone: 'America/New_York' })}`);
+      console.log(`   - Last claim date ms: ${lastClaimDateMs}`);
+      console.log(`   - Today start ms: ${todayStartMs}`);
+      console.log(`   - Dates equal: ${lastClaimDateMs === todayStartMs}`);
+
       // If last claim was today, they can't claim
       if (lastClaimDateMs === todayStartMs) {
         const nextReset = this.getNextResetTime();
@@ -61,6 +75,7 @@ class FaucetDripService {
         const hoursLeft = Math.floor(timeUntilReset / (1000 * 60 * 60));
         const minutesLeft = Math.floor((timeUntilReset % (1000 * 60 * 60)) / (1000 * 60));
 
+        console.log(`   ❌ Already claimed today - blocking claim`);
         return {
           canClaim: false,
           reason: `⏳ You already claimed today! Next claim available in **${hoursLeft}h ${minutesLeft}m** at midnight EST.`,
@@ -68,6 +83,7 @@ class FaucetDripService {
         };
       }
 
+      console.log(`   ✅ Last claim was before today - user can claim`);
       return { canClaim: true };
     } catch (error) {
       console.error('❌ Error checking claim eligibility:', error);
@@ -164,14 +180,18 @@ class FaucetDripService {
    */
   async processClaim(userId, guildId, walletAddress, config) {
     try {
+      console.log(`\n💧 Processing claim for user ${userId}`);
       const claimCheck = await this.canClaim(userId, guildId, walletAddress);
 
       if (!claimCheck.canClaim) {
+        console.log(`   ❌ Claim blocked: ${claimCheck.reason}`);
         return {
           success: false,
           message: claimCheck.reason
         };
       }
+
+      console.log(`   ✅ Claim check passed - proceeding with transfer`);
 
       // Transfer tokens to user's wallet
       const transferResult = await transferToken(
@@ -182,14 +202,20 @@ class FaucetDripService {
       );
 
       if (!transferResult.success) {
+        console.log(`   ❌ Transfer failed: ${transferResult.error}`);
         return {
           success: false,
           message: `❌ Token transfer failed: ${transferResult.error}`
         };
       }
 
+      console.log(`   ✅ Transfer successful: ${transferResult.transactionId}`);
+
       // Update claim record only after successful transfer
+      const now = Date.now();
+      console.log(`   📝 Updating claim record with timestamp: ${now}`);
       await updateLastClaim(userId, guildId, config.amount_per_claim);
+      console.log(`   ✅ Claim record updated`);
 
       return {
         success: true,
