@@ -11,11 +11,6 @@ module.exports = {
         .setDescription('Token ID to distribute (e.g., 0.0.9356476)')
         .setRequired(true)
     )
-    .addIntegerOption(option =>
-      option.setName('amount_per_claim')
-        .setDescription('Amount to distribute per claim (default: 1111)')
-        .setRequired(false)
-    )
     .addChannelOption(option =>
       option.setName('channel')
         .setDescription('Channel where faucet commands work')
@@ -30,6 +25,11 @@ module.exports = {
       option.setName('nft_token_id')
         .setDescription('NFT token ID required to use faucet (e.g., 0.0.10032995)')
         .setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option.setName('amount_per_claim')
+        .setDescription('Amount to distribute per claim (default: 1111)')
+        .setRequired(false)
     ),
 
   async execute(interaction) {
