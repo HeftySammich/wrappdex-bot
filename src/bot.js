@@ -37,15 +37,37 @@ async function deployCommands() {
     const commandFolders = ['public', 'admin'];
 
     for (const folder of commandFolders) {
-      const commandFiles = fs.readdirSync(`./src/commands/${folder}`).filter(file => file.endsWith('.js'));
-      console.log(`📂 Found ${commandFiles.length} commands in ${folder}: ${commandFiles.join(', ')}`);
-      for (const file of commandFiles) {
-        const command = require(`./commands/${folder}/${file}`);
-        commands.push(command.data.toJSON());
+      try {
+        const folderPath = `./src/commands/${folder}`;
+        console.log(`📂 Reading folder: ${folderPath}`);
+        const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
+        console.log(`📂 Found ${commandFiles.length} commands in ${folder}: ${commandFiles.join(', ')}`);
+
+        for (const file of commandFiles) {
+          try {
+            console.log(`  📄 Loading command: ${file}`);
+            const command = require(`./commands/${folder}/${file}`);
+            if (!command.data) {
+              console.error(`  ❌ Command ${file} missing 'data' property!`);
+              continue;
+            }
+            commands.push(command.data.toJSON());
+            console.log(`  ✅ Loaded: ${command.data.name}`);
+          } catch (fileError) {
+            console.error(`  ❌ Error loading command ${file}:`, fileError.message);
+          }
+        }
+      } catch (folderError) {
+        console.error(`❌ Error reading folder ${folder}:`, folderError.message);
       }
     }
 
     console.log(`📋 Total commands to deploy: ${commands.length}`);
+    if (commands.length === 0) {
+      console.error('❌ NO COMMANDS FOUND! This is a critical error.');
+      return;
+    }
+
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
     // Clear global commands if deploying to guild (prevents duplicates)
@@ -65,20 +87,35 @@ async function deployCommands() {
     // Deploy to specific guild for instant updates (if DISCORD_GUILD_ID is set)
     // Otherwise deploy globally (takes up to 1 hour)
     if (process.env.DISCORD_GUILD_ID) {
-      await rest.put(
-        Routes.applicationGuildCommands(process.env.DISCORD_APPLICATION_ID, process.env.DISCORD_GUILD_ID),
-        { body: commands }
-      );
-      console.log(`✅ Successfully deployed ${commands.length} slash commands to guild ${process.env.DISCORD_GUILD_ID} (instant)!`);
+      console.log(`🚀 Deploying ${commands.length} commands to guild ${process.env.DISCORD_GUILD_ID}...`);
+      try {
+        const result = await rest.put(
+          Routes.applicationGuildCommands(process.env.DISCORD_APPLICATION_ID, process.env.DISCORD_GUILD_ID),
+          { body: commands }
+        );
+        console.log(`✅ Successfully deployed ${result.length} slash commands to guild ${process.env.DISCORD_GUILD_ID} (instant)!`);
+      } catch (deployError) {
+        console.error('❌ Guild deployment failed:', deployError.message);
+        console.error('Response:', deployError.response?.data);
+        throw deployError;
+      }
     } else {
-      await rest.put(
-        Routes.applicationCommands(process.env.DISCORD_APPLICATION_ID),
-        { body: commands }
-      );
-      console.log(`✅ Successfully deployed ${commands.length} slash commands globally (may take up to 1 hour)!`);
+      console.log(`🚀 Deploying ${commands.length} commands globally...`);
+      try {
+        const result = await rest.put(
+          Routes.applicationCommands(process.env.DISCORD_APPLICATION_ID),
+          { body: commands }
+        );
+        console.log(`✅ Successfully deployed ${result.length} slash commands globally (may take up to 1 hour)!`);
+      } catch (deployError) {
+        console.error('❌ Global deployment failed:', deployError.message);
+        console.error('Response:', deployError.response?.data);
+        throw deployError;
+      }
     }
   } catch (error) {
-    console.error('❌ Error deploying commands:', error);
+    console.error('❌ CRITICAL ERROR in deployCommands:', error.message);
+    console.error('Full error:', error);
   }
 }
 
@@ -94,7 +131,14 @@ client.once('ready', async () => {
   }
 
   // Deploy commands automatically on startup
-  await deployCommands();
+  try {
+    console.log('🔄 Starting command deployment...');
+    await deployCommands();
+    console.log('✅ Command deployment completed');
+  } catch (error) {
+    console.error('❌ CRITICAL ERROR during command deployment:', error);
+    console.error('Stack trace:', error.stack);
+  }
 
   console.log(`🚀 Bot is ready and running!`);
 
