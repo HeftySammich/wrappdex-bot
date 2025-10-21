@@ -92,24 +92,28 @@ async function retryHederaOperation(operation, maxAttempts = 5) {
   }
 }
 
-// Check if wallet is associated with a specific token
+// Check if wallet is associated with a specific token using Mirror Node API
+// This avoids SDK rate limiting issues
 async function isTokenAssociated(walletId, tokenId) {
-  if (!isHederaInitialized) {
-    throw new Error('Faucet service not configured');
-  }
-
   try {
-    const result = await retryHederaOperation(() =>
-      new AccountBalanceQuery().setAccountId(walletId).execute(client)
-    );
+    // Use Mirror Node API instead of SDK to avoid rate limiting
+    const mirrorNodeUrl = `${HEDERA_MIRROR_NODE_URL}/api/v1/accounts/${walletId}/tokens?token.id=${tokenId}`;
 
-    const isAssociated = result.tokens._map.has(tokenId);
-    console.log(`🔗 Token ${tokenId} association check for ${walletId}: ${isAssociated ? '✅ Associated' : '❌ NOT associated'}`);
+    console.log(`🔗 Checking token association via Mirror Node: ${walletId} -> ${tokenId}`);
+
+    const response = await axios.get(mirrorNodeUrl, { timeout: 10000 });
+
+    // If we get a response with tokens array, the wallet has the token
+    const tokens = response.data.tokens || [];
+    const isAssociated = tokens.length > 0;
+
+    console.log(`🔗 Token ${tokenId} association for ${walletId}: ${isAssociated ? '✅ Associated' : '❌ NOT associated'}`);
 
     return isAssociated;
   } catch (err) {
-    console.error(`❌ Error checking token association for ${walletId}:`, err);
-    throw err;
+    console.error(`❌ Error checking token association for ${walletId}:`, err.message);
+    // If Mirror Node fails, assume not associated (safer than throwing)
+    return false;
   }
 }
 
@@ -403,9 +407,18 @@ async function transferToken(recipientWalletId, tokenId, amount, decimals = 8) {
       throw new Error('Invalid token ID format. Expected 0.0.xxxx');
     }
 
-    // Note: Token association check removed due to Hedera network BUSY errors
-    // The transfer will fail naturally if token is not associated, providing clear error
-    // Users will see the error and know to associate the token
+    // Check if recipient wallet has the token associated (using Mirror Node API, not SDK)
+    console.log(`🔍 Checking if wallet ${walletStr} has token ${tokenId} associated...`);
+    const isAssociated = await isTokenAssociated(walletStr, tokenId);
+
+    if (!isAssociated) {
+      console.log(`❌ Token ${tokenId} is NOT associated with wallet ${walletStr}`);
+      return {
+        success: false,
+        error: 'Token not associated',
+        message: `❌ Your wallet (\`${walletStr}\`) does not have the **hbar.h** token associated.\n\n**To fix this:**\n1. Go to [HashPack Wallet](https://www.hashpack.app/) or your Hedera wallet\n2. Find the token **hbar.h (0.0.9356476)**\n3. Click "Associate" or enable auto-association\n4. Try claiming again!\n\n**Need help?** Ask in <#1427138298106740736>`
+      };
+    }
 
     // Convert amount to smallest unit (considering decimals)
     // Use string to avoid BigInt conversion issues with Hedera SDK
@@ -447,6 +460,7 @@ async function transferToken(recipientWalletId, tokenId, amount, decimals = 8) {
 
 module.exports = {
   checkAssociation,
+  isTokenAssociated,
   getBalance,
   transferNFT,
   transferToken,
