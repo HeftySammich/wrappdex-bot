@@ -403,18 +403,9 @@ async function transferToken(recipientWalletId, tokenId, amount, decimals = 8) {
       throw new Error('Invalid token ID format. Expected 0.0.xxxx');
     }
 
-    // Check if recipient wallet has the token associated
-    console.log(`🔍 Checking if wallet ${walletStr} has token ${tokenId} associated...`);
-    const isAssociated = await isTokenAssociated(walletStr, tokenId);
-
-    if (!isAssociated) {
-      console.log(`❌ Token ${tokenId} is NOT associated with wallet ${walletStr}`);
-      return {
-        success: false,
-        error: 'Token not associated',
-        message: `❌ Your wallet (\`${walletStr}\`) does not have the **hbar.h** token associated.\n\n**To fix this:**\n1. Go to [HashPack Wallet](https://www.hashpack.app/) or your Hedera wallet\n2. Find the token **hbar.h (0.0.9356476)**\n3. Click "Associate" or enable auto-association\n4. Try claiming again!\n\n**Need help?** Ask in <#1427138298106740736>`
-      };
-    }
+    // Note: Token association check removed due to Hedera network BUSY errors
+    // The transfer will fail naturally if token is not associated, providing clear error
+    // Users will see the error and know to associate the token
 
     // Convert amount to smallest unit (considering decimals)
     // Use string to avoid BigInt conversion issues with Hedera SDK
@@ -456,7 +447,6 @@ async function transferToken(recipientWalletId, tokenId, amount, decimals = 8) {
 
 module.exports = {
   checkAssociation,
-  isTokenAssociated,
   getBalance,
   transferNFT,
   transferToken,
