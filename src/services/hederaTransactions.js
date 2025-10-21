@@ -92,6 +92,27 @@ async function retryHederaOperation(operation, maxAttempts = 5) {
   }
 }
 
+// Check if wallet is associated with a specific token
+async function isTokenAssociated(walletId, tokenId) {
+  if (!isHederaInitialized) {
+    throw new Error('Faucet service not configured');
+  }
+
+  try {
+    const result = await retryHederaOperation(() =>
+      new AccountBalanceQuery().setAccountId(walletId).execute(client)
+    );
+
+    const isAssociated = result.tokens._map.has(tokenId);
+    console.log(`🔗 Token ${tokenId} association check for ${walletId}: ${isAssociated ? '✅ Associated' : '❌ NOT associated'}`);
+
+    return isAssociated;
+  } catch (err) {
+    console.error(`❌ Error checking token association for ${walletId}:`, err);
+    throw err;
+  }
+}
+
 // Check if wallet is associated with tokens
 async function checkAssociation(walletId) {
   if (!isHederaInitialized) {
@@ -382,6 +403,19 @@ async function transferToken(recipientWalletId, tokenId, amount, decimals = 8) {
       throw new Error('Invalid token ID format. Expected 0.0.xxxx');
     }
 
+    // Check if recipient wallet has the token associated
+    console.log(`🔍 Checking if wallet ${walletStr} has token ${tokenId} associated...`);
+    const isAssociated = await isTokenAssociated(walletStr, tokenId);
+
+    if (!isAssociated) {
+      console.log(`❌ Token ${tokenId} is NOT associated with wallet ${walletStr}`);
+      return {
+        success: false,
+        error: 'Token not associated',
+        message: `❌ Your wallet (\`${walletStr}\`) does not have the **hbar.h** token associated.\n\n**To fix this:**\n1. Go to [HashPack Wallet](https://www.hashpack.app/) or your Hedera wallet\n2. Find the token **hbar.h (0.0.9356476)**\n3. Click "Associate" or enable auto-association\n4. Try claiming again!\n\n**Need help?** Ask in <#1427138298106740736>`
+      };
+    }
+
     // Convert amount to smallest unit (considering decimals)
     // Use string to avoid BigInt conversion issues with Hedera SDK
     const amountInSmallestUnit = (BigInt(amount) * BigInt(Math.pow(10, decimals))).toString();
@@ -422,6 +456,7 @@ async function transferToken(recipientWalletId, tokenId, amount, decimals = 8) {
 
 module.exports = {
   checkAssociation,
+  isTokenAssociated,
   getBalance,
   transferNFT,
   transferToken,
