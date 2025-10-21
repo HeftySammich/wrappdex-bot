@@ -8,6 +8,8 @@ const {
   TokenInfoQuery,
   AccountBalanceQuery
 } = require('@hashgraph/sdk');
+const axios = require('axios');
+const { HEDERA_MIRROR_NODE_URL } = require('../utils/constants');
 
 // Hedera setup - only initialize if environment variables are present
 let operatorId, operatorKey, client, NFT_TOKEN_IDS;
